@@ -1,0 +1,212 @@
+import type { MockAiFitnessPoint, MockAiRun, MockAiScenario, MockAiTarget } from './types';
+
+const clusterNames = {
+  east: 'staging-us-east-1',
+  west: 'staging-eu-west-1',
+  prod: 'prod-us-central1',
+} as const;
+
+export const mockAiTargets: MockAiTarget[] = [
+  {
+    cluster: { operatorName: 'krkn-operator', clusterName: clusterNames.east, clusterApiUrl: 'https://api.staging-east.example.com:6443' },
+    targetRequestId: `mock-ai-target-${clusterNames.east}`,
+    components: { namespaces: ['robot-shop'], pods: ['cart-1', 'payment-1', 'redis-0', 'dispatch-1'], services: ['cart', 'payment', 'redis', 'dispatch'], nodes: ['worker-1', 'worker-2'] },
+    recommendations: ['Storage and network scenario families are available in this mock discovery.'],
+    warnings: [],
+  },
+  {
+    cluster: { operatorName: 'krkn-operator', clusterName: clusterNames.west, clusterApiUrl: 'https://api.staging-west.example.com:6443' },
+    targetRequestId: `mock-ai-target-${clusterNames.west}`,
+    components: { namespaces: ['shop-staging'], pods: ['cart-1', 'payment-1'], services: ['cart', 'payment'], nodes: ['worker-1'] },
+    recommendations: ['Pod and container scenario families are available in this mock discovery.'],
+    warnings: [],
+  },
+  {
+    cluster: { operatorName: 'krkn-operator', clusterName: clusterNames.prod, clusterApiUrl: 'https://api.prod.example.com:6443' },
+    targetRequestId: `mock-ai-target-${clusterNames.prod}`,
+    components: { namespaces: ['payments'], pods: ['checkout-1', 'ledger-1'], services: ['checkout', 'ledger'], nodes: ['worker-1', 'worker-2'] },
+    recommendations: ['Review the health-check configuration before selecting a scenario family.'],
+    warnings: ['No active health checks in this mock discovery'],
+  },
+];
+
+// The source run's scenario UUIDs are retained only to preserve lineage parent IDs.
+const scenarioUuids: Record<number, string> = {
+  1: '020f3fab-57f9-43f8-8f92-5831eb6b7c57',
+  2: 'b6bf2f13-c725-4c0a-8ba9-bd18404d3662',
+  3: 'a44a99df-2a5d-4756-be84-ff94256cb3d9',
+  4: '31fa768a-489d-4b53-9047-250d184d7623',
+  5: 'd2dfcb62-1cb4-4f75-8699-8cecda4f3604',
+  6: '00efc10e-314d-4645-8587-fb93ee99cb56',
+  7: 'f2dea19c-4ba6-4b97-ac95-3a03b0946915',
+  8: '59185fe9-cf72-439c-8108-78bd70c0669e',
+  9: '24eda424-0c04-44d4-be04-4d911a2884e7',
+  10: '0de7ac60-e8a9-4f3d-8304-4372b06dbac1',
+  11: 'c9d56c43-b039-4274-8623-01b9f4aabba3',
+  12: 'c1871b79-176a-4e7e-9414-2555b9bc56ce',
+  13: '0197b047-b6a7-4209-b9df-cecd761a9a02',
+  14: '3701f2e2-920c-4d9d-a54d-2e52b2b4239b',
+  15: 'f3bbec30-ca16-44ee-8829-e8eeb9cf9e3d',
+  16: 'f99cc160-24b8-4e19-a211-254c780e11a8',
+  17: '20373b85-02e0-4dc2-9e49-9060bf9a7e49',
+  18: 'd74b1e5f-d8b2-4339-b702-6fd6abd621f5',
+  19: 'a8d80772-40c7-4378-9bd0-827a8b69e175',
+  20: 'a810c0eb-e015-4fc1-bb63-4bb35633536b',
+  21: 'f88ca614-607e-4c17-a0f9-0f59a27064d6',
+  22: 'e8be358b-2746-46d4-a8c8-192c31effd5c',
+  23: 'b9239e4c-e036-4a00-9043-8e1292b9e0a0',
+  24: 'c3eaccb4-dab6-48fb-9924-4d7eb970d079',
+};
+
+type RawScenario = [
+  id: number,
+  generation: number,
+  scenarioType: string,
+  fitness: number,
+  durationSeconds: number,
+  parameters: MockAiScenario['parameters'],
+  parentScenarioIds: number[],
+  origin: string,
+  healthCheckFailureScore: number,
+  healthCheckResponseTimeScore: number,
+  krknFailureScore: number,
+  returnCode: number | null,
+];
+
+// CSV parameters are allowlisted; commands, image values, pod names, and raw logs are excluded.
+const rawScenarios: RawScenario[] = [
+  [1, 0, 'storage-throttle', 26.798, 234.18, { namespace: 'robot-shop', 'pvc-name': 'data-redis-0', 'throttle-type': 'iops', 'read-iops': '80', 'write-iops': '353', duration: '60' }, [], 'initial', 0.116, 0.7849, 0, null],
+  [2, 0, 'storage-throttle', 16.6341, 139.37, { namespace: 'robot-shop', 'pvc-name': 'data-redis-0', 'throttle-type': 'both', 'read-iops': '418', 'write-iops': '489', duration: '60' }, [], 'initial', 0.1122, 0.4322, 0, null],
+  [3, 0, 'pod-scenarios', 13.4904, 82.46, { namespace: 'robot-shop' }, [], 'initial', 0.1111, 0.3237, 0, null],
+  [4, 0, 'pod-scenarios', 13.0093, 57.32, { namespace: 'robot-shop' }, [], 'initial', 0.1085, 0.3263, 0, null],
+  [5, 1, 'syn-flood', 20.5855, 136.47, { namespace: 'robot-shop', 'target-service': 'mysql' }, [2, 2], 'type_mutation', 0.1111, 0.6459, 0, null],
+  [6, 1, 'storage-throttle', 30.4453, 140.98, { namespace: 'robot-shop', 'pvc-name': 'data-redis-0', 'throttle-type': 'iops', 'read-iops': '12', 'write-iops': '278', duration: '60' }, [2, 2], 'parameter_mutation', 0.1139, 0.9584, 0, null],
+  [7, 1, 'dns-outage', 30.1776, 193.29, { namespace: 'robot-shop' }, [1, 2], 'type_mutation', 0.1188, 0.965, 0, null],
+  [8, 1, 'pvc-scenarios', 25.3652, 146.86, { namespace: 'robot-shop', 'pvc-name': 'data-redis-0', 'fill-percentage': '16', duration: '60' }, [1, 2], 'type_mutation', 0.1159, 0.8363, 0, null],
+  [9, 2, 'container-scenarios', 27.9348, 111.65, { namespace: 'robot-shop', action: '1' }, [6, 6], 'type_mutation', 0.1097, 0.928, 0, null],
+  [10, 2, 'storage-throttle', 17.699, 159.04, { namespace: 'robot-shop', 'pvc-name': 'data-redis-0', 'throttle-type': 'both', 'read-iops': '275', 'write-iops': '458', duration: '60' }, [6, 6], 'parameter_mutation', 0.1155, 0.5307, 0, null],
+  [11, 2, 'syn-flood', 17.7204, 116.93, { namespace: 'robot-shop', 'target-service': 'mongodb' }, [6, 7], 'type_mutation', 0.1179, 0.5909, 0, null],
+  [12, 2, 'storage-throttle', 18.8781, 142.21, { namespace: 'robot-shop', 'pvc-name': 'data-redis-0', 'throttle-type': 'iops', 'read-iops': '59', 'write-iops': '105', duration: '60' }, [6, 7], 'type_mutation', 0.116, 0.4516, 0, null],
+  [13, 3, 'storage-throttle', 19.0744, 140.01, { namespace: 'robot-shop', 'pvc-name': 'data-redis-0', 'throttle-type': 'iops', 'read-iops': '198', 'write-iops': '87', duration: '60' }, [9, 9], 'type_mutation', 0.1218, 0.5189, 0, null],
+  [14, 3, 'pvc-scenarios', 17.7563, 144.15, { namespace: 'robot-shop', 'pvc-name': 'data-redis-0', 'fill-percentage': '10', duration: '60' }, [9, 9], 'type_mutation', 0.1149, 0.595, 0, null],
+  [15, 3, 'storage-throttle', 21.7345, 149.56, { namespace: 'robot-shop', 'pvc-name': 'data-redis-0', 'throttle-type': 'iops', 'read-iops': '204', 'write-iops': '274', duration: '60' }, [9, 12], 'type_mutation', 0.1152, 0.6311, 0, null],
+  [16, 3, 'pvc-scenarios', 22.5432, 140.97, { namespace: 'robot-shop', 'pvc-name': 'data-redis-0', 'fill-percentage': '86', duration: '60' }, [9, 12], 'type_mutation', 0.1032, 0.6627, 0, null],
+  [17, 4, 'container-scenarios', -1, 80.18, { namespace: 'robot-shop', action: '1' }, [16, 15], 'type_mutation', 0, 0, -1, 1],
+  [18, 4, 'syn-flood', 15.2516, 123.64, { namespace: 'robot-shop', 'target-service': 'ratings' }, [16, 15], 'type_mutation', 0.0963, 0.39, 0, null],
+  [19, 4, 'storage-throttle', 17.7387, 140.35, { namespace: 'robot-shop', 'pvc-name': 'data-redis-0', 'throttle-type': 'iops', 'read-iops': '42', 'write-iops': '396', duration: '60' }, [13, 13], 'parameter_mutation', 0.0987, 0.4649, 0, null],
+  [20, 4, 'syn-flood', 15.393, 121.19, { namespace: 'robot-shop', 'target-service': 'dispatch' }, [13, 13], 'type_mutation', 0.0947, 0.4585, 0, null],
+  [21, 5, 'time-scenarios', 16.6958, 148.49, { action: 'skew_date', namespace: 'robot-shop' }, [20, 20], 'type_mutation', 0.1027, 0.5026, 0, null],
+  [22, 5, 'node-memory-hog', 12.5558, 128.47, { namespace: 'robot-shop' }, [20, 20], 'type_mutation', 0.1021, 0.2029, 0, null],
+  [23, 5, 'node-io-hog', 16.2195, 128.75, { namespace: 'robot-shop' }, [19, 19], 'type_mutation', 0.0979, 0.4243, 0, null],
+  [24, 5, 'dns-outage', 10.1455, 303.11, { namespace: 'robot-shop' }, [19, 19], 'type_mutation', 0.0955, 0.1952, 0, null],
+];
+
+const scenarios: MockAiScenario[] = rawScenarios.map(([scenarioId, generation, scenarioType, fitnessScore, durationSeconds, parameters, parentScenarioIds, origin, healthCheckFailureScore, healthCheckResponseTimeScore, krknFailureScore, returnCode]) => {
+  const podName = `mock-krkn-scenario-${scenarioId}`;
+  const failed = returnCode !== null;
+  return {
+    scenarioId,
+    generation,
+    scenarioType,
+    fitnessScore,
+    durationSeconds,
+    outcome: failed ? 'Failed' : 'Succeeded',
+    podName,
+    logLines: failed
+      ? ['Illustrative failed mock scenario; raw pod output is intentionally omitted.', 'Mock return code: 1.']
+      : ['Illustrative mock scenario pod completed.', `Mock fitness score: ${fitnessScore}.`],
+    parameters,
+    parentIds: parentScenarioIds.map((id) => scenarioUuids[id]),
+    origin,
+    healthCheckFailureScore,
+    healthCheckResponseTimeScore,
+    krknFailureScore,
+    ...(returnCode === null ? {} : { returnCode }),
+  };
+});
+
+const progression: MockAiFitnessPoint[] = [
+  { generation: 0, best: 26.798, average: 17.4829 },
+  { generation: 1, best: 30.4453, average: 26.6434 },
+  { generation: 2, best: 27.9348, average: 20.5581 },
+  { generation: 3, best: 22.5432, average: 20.2771 },
+  { generation: 4, best: 17.7387, average: 11.8458 },
+  { generation: 5, best: 16.6958, average: 13.9042 },
+];
+
+const eastTarget = mockAiTargets[0];
+const westTarget = mockAiTargets[1];
+const mockLogs = (message: string) => [
+  'Illustrative mock log snippet; no live pod was queried.',
+  message,
+];
+
+const completedRun: MockAiRun = {
+  name: 'robot-shop-exploration',
+  runId: '90715e34-b0ff-40cd-b96f-9b6cdd59a033',
+  cluster: eastTarget.cluster,
+  targetRequestId: eastTarget.targetRequestId,
+  configId: 'mock-config-robot-shop-exploration',
+  phase: 'Succeeded',
+  createdAt: '2026-08-18T13:15:30.549208+00:00',
+  generations: 6,
+  populationSize: 4,
+  completedGenerations: 6,
+  scenarios,
+  progression,
+  baselineFitness: 7.3001,
+  orchestrator: {
+    podName: 'mock-krkn-ai-orchestrator-robot-shop-exploration',
+    status: 'Succeeded',
+    logLines: mockLogs('Mock sample fixture reports six completed generations.'),
+  },
+  uploader: { status: 'Complete', logLines: mockLogs('Mock result upload status: complete.') },
+};
+
+const runningScenarios = scenarios.filter((scenario) => scenario.generation < 2);
+
+const runningRun: MockAiRun = {
+  name: 'staging-preview-in-progress',
+  runId: 'mock-run-staging-preview-in-progress',
+  cluster: eastTarget.cluster,
+  targetRequestId: eastTarget.targetRequestId,
+  configId: 'mock-config-staging-preview-in-progress',
+  phase: 'Running',
+  createdAt: '2026-09-23T09:20:00Z',
+  generations: 6,
+  populationSize: 4,
+  completedGenerations: 2,
+  scenarios: runningScenarios,
+  progression: progression.slice(0, 2),
+  orchestrator: {
+    podName: 'mock-krkn-ai-orchestrator-staging-preview-in-progress',
+    status: 'Running',
+    logLines: mockLogs('Fixed mock snapshot: two generations are complete.'),
+  },
+  uploader: { status: 'Pending', logLines: mockLogs('Mock uploader is waiting for the run to finish.') },
+  snapshotLabel: 'Fixed mock snapshot — no polling',
+};
+
+const failedRun: MockAiRun = {
+  name: 'failed-preview',
+  runId: 'mock-run-failed-preview',
+  cluster: westTarget.cluster,
+  targetRequestId: westTarget.targetRequestId,
+  configId: 'mock-config-failed-preview',
+  phase: 'Failed',
+  createdAt: '2026-09-23T08:10:00Z',
+  generations: 6,
+  populationSize: 4,
+  completedGenerations: null,
+  scenarios: [],
+  progression: [],
+  orchestrator: {
+    podName: 'mock-krkn-ai-orchestrator-failed-preview',
+    status: 'Failed',
+    logLines: mockLogs('Illustrative orchestrator pod exited non-zero.'),
+  },
+  uploader: { status: 'Unavailable', logLines: mockLogs('No result artifacts were produced in this failed mock run.') },
+  failureReason: 'Illustrative orchestrator pod exited non-zero',
+};
+
+export const mockAiRuns: MockAiRun[] = [completedRun, runningRun, failedRun];

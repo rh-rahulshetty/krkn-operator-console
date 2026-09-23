@@ -20,6 +20,9 @@ import { graphRunsApi } from './services';
 import { usersApi } from './services/usersApi';
 import { useNotifications } from './hooks';
 import type { SelectedCluster, UpdateUserRequest, ChangePasswordRequest, ScenarioRunState } from './types/api';
+import { KrknAIPage } from './components/KrknAI/KrknAIPage';
+import { mockAiRuns } from './components/KrknAI/mockData';
+import type { MockAiRun } from './components/KrknAI/types';
 
 function App() {
   const { state, dispatch } = useAppContext();
@@ -34,6 +37,7 @@ function App() {
     const saved = localStorage.getItem('theme');
     return saved === 'dark';
   });
+  const [krknAiRuns, setKrknAiRuns] = useState<MockAiRun[]>(mockAiRuns);
 
   // Apply theme to document root
   useEffect(() => {
@@ -242,6 +246,16 @@ function App() {
         );
       }
 
+      case 'krkn_ai':
+        return (
+          <PageSection>
+            <KrknAIPage
+              runs={krknAiRuns}
+              onAddRun={(run) => setKrknAiRuns((currentRuns) => [run, ...currentRuns])}
+            />
+          </PageSection>
+        );
+
       case 'settings':
         return <Settings />;
 
@@ -336,6 +350,12 @@ function App() {
     return true;
   };
 
+
+  const handleNavigateToKrknAI = () => {
+    const proceed = () => dispatch({ type: 'NAVIGATE_TO_KRKN_AI' });
+    if (!checkStudioGuard(proceed)) return;
+    proceed();
+  };
   const handleNavigateToSettings = () => {
     const proceed = () => dispatch({ type: 'NAVIGATE_TO_SETTINGS' });
     if (!checkStudioGuard(proceed)) return;
@@ -421,6 +441,7 @@ function App() {
       userName={`${authState.user?.name ?? ''} ${authState.user?.surname ?? ''}`.trim()}
       isDarkTheme={isDarkTheme}
       onNavigateJobs={handleNavigateToHome}
+      onNavigateKrknAI={handleNavigateToKrknAI}
       onRunScenario={handleCreateJob}
       onNavigateStudio={handleNavigateToStudio}
       onOpenFiles={handleNavigateToFiles}

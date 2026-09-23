@@ -596,6 +596,12 @@ function appReducer(state: AppState, action: AppAction): AppState {
             phase: 'jobs_list',
           };
 
+        case 'krkn_ai':
+          return {
+            ...state,
+            phase: 'jobs_list',
+          };
+
         case 'selecting_clusters':
           // From cluster selection → cancel workflow, back to jobs list
           return {
@@ -698,6 +704,12 @@ function appReducer(state: AppState, action: AppAction): AppState {
       return {
         ...state,
         phase: 'elasticsearch_data',
+      };
+
+    case 'NAVIGATE_TO_KRKN_AI':
+      return {
+        ...state,
+        phase: 'krkn_ai',
       };
 
     // Notifications

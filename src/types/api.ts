@@ -403,6 +403,7 @@ export type AppPhase =
   | 'terminal' // Full-screen cluster terminal page
   | 'files' // File management page
   | 'elasticsearch_data' // Elasticsearch telemetry data table page
+  | 'krkn_ai' // Mock Krkn AI console
   | 'selecting_clusters' // Multi-cluster selection
   | 'configuring_registry'
   | 'loading_scenarios'
@@ -559,6 +560,7 @@ export type AppAction =
   | { type: 'NAVIGATE_TO_TERMINAL' }
   | { type: 'NAVIGATE_TO_FILES' }
   | { type: 'NAVIGATE_TO_ELASTICSEARCH_DATA' }
+  | { type: 'NAVIGATE_TO_KRKN_AI' }
 
   // Notifications
   | { type: 'SHOW_NOTIFICATION'; payload: { notification: Notification } }

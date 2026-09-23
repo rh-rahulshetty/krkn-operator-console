@@ -64,6 +64,9 @@ vi.mock('./components', () => ({
   Studio: () => <div>Studio</div>,
   ElasticsearchDataView: () => <div data-testid="elasticsearch-data-view">ElasticsearchDataView</div>,
 }));
+vi.mock('./components/KrknAI/KrknAIPage', () => ({
+  KrknAIPage: () => <div data-testid="krkn-ai-page">KrknAIPage</div>,
+}));
 vi.mock('./components/FileManagement', () => ({ FileManagementPage: () => <div>FileManagementPage</div> }));
 vi.mock('./components/ScenarioDetail', () => ({ ScenarioDetail: () => <div>ScenarioDetail</div> }));
 vi.mock('./components/UserForm', () => ({ UserForm: () => <div>UserForm</div> }));
@@ -103,6 +106,28 @@ describe('App Elasticsearch navigation', () => {
     await waitFor(() => {
       expect(screen.getByTestId('elasticsearch-data-view')).toBeInTheDocument();
     });
+  });
+});
+
+describe('App Krkn AI navigation', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    const store = new Map<string, string>();
+    vi.stubGlobal('localStorage', {
+      getItem: (key: string) => store.get(key) ?? null,
+      setItem: (key: string, value: string) => void store.set(key, value),
+      removeItem: (key: string) => void store.delete(key),
+      clear: () => store.clear(),
+    });
+  });
+
+  it('renders the Krkn AI page from the sidebar destination', async () => {
+    const user = userEvent.setup();
+    renderApp();
+    expect(screen.queryByTestId('krkn-ai-page')).not.toBeInTheDocument();
+
+    await user.click(screen.getByText('Krkn AI'));
+    await waitFor(() => expect(screen.getByTestId('krkn-ai-page')).toBeInTheDocument());
   });
 });
 

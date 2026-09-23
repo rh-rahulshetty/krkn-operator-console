@@ -52,6 +52,16 @@ cp .env.example .env.local
 | `VITE_POLL_TIMEOUT`  | `60000`   | Poll timeout (ms)         |
 | `VITE_DEBUG_MODE`    | `false`   | Enable debug logging      |
 
+### Krkn AI mock preview
+
+Run the client-only Krkn AI prototype with preview mode enabled:
+
+```bash
+VITE_PREVIEW_MODE=true npm run dev -- --host 127.0.0.1
+```
+
+Open `http://127.0.0.1:3000/app` and choose **Krkn AI** in the sidebar. Discovery data, seeded runs, and generated configuration are illustrative. Creating a run updates only browser-session memory; the flow sends no Krkn AI or target API requests and never creates Kubernetes resources.
+
 ### Other Commands
 
 ```bash

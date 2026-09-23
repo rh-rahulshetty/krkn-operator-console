@@ -1,0 +1,89 @@
+import type { SelectedCluster } from '../../types/api';
+
+export type MockAiRunPhase = 'Pending' | 'Provisioning' | 'Running' | 'Succeeded' | 'Failed' | 'Cancelled';
+export type MockAiScenarioOutcome = 'Succeeded' | 'Failed';
+export type MockAiOrchestratorStatus = 'Pending' | 'Running' | 'Succeeded' | 'Failed' | 'Not created';
+export type MockAiUploaderStatus = 'Complete' | 'Pending' | 'Not started' | 'Unavailable';
+
+export type MockAiScenarioParameter =
+  | 'namespace'
+  | 'duration'
+  | 'pvc-name'
+  | 'target-service'
+  | 'action'
+  | 'throttle-type'
+  | 'read-iops'
+  | 'write-iops'
+  | 'fill-percentage';
+
+export interface MockAiClusterComponents {
+  namespaces: string[];
+  pods: string[];
+  services: string[];
+  nodes: string[];
+}
+
+export interface MockAiTarget {
+  cluster: SelectedCluster;
+  targetRequestId: string;
+  components: MockAiClusterComponents;
+  recommendations: string[];
+  warnings: string[];
+}
+
+export interface MockAiScenario {
+  scenarioId: number;
+  /** Zero-based generation ID from the sample run. */
+  generation: number;
+  scenarioType: string;
+  fitnessScore: number;
+  durationSeconds: number;
+  outcome: MockAiScenarioOutcome;
+  podName: string;
+  logLines: string[];
+  parameters: Partial<Record<MockAiScenarioParameter, string>>;
+  parentIds: string[];
+  origin: string;
+  healthCheckFailureScore?: number;
+  healthCheckResponseTimeScore?: number;
+  krknFailureScore?: number;
+  returnCode?: number;
+}
+
+export interface MockAiFitnessPoint {
+  /** Zero-based generation ID. */
+  generation: number;
+  best: number;
+  average: number;
+}
+
+export interface MockAiRun {
+  name: string;
+  runId?: string;
+  cluster: SelectedCluster;
+  targetRequestId: string;
+  configId: string;
+  /** Frozen YAML for an in-memory mock config, when created in this session. */
+  configYaml?: string;
+  /** Operator-facing phase; distinct from Krkn AI results.json.status. */
+  phase: MockAiRunPhase;
+  createdAt: string;
+  generations: number;
+  populationSize: number;
+  completedGenerations: number | null;
+  scenarios: MockAiScenario[];
+  progression: MockAiFitnessPoint[];
+  baselineFitness?: number;
+  orchestrator: {
+    podName?: string;
+    status: MockAiOrchestratorStatus;
+    logLines: string[];
+  };
+  uploader: {
+    status: MockAiUploaderStatus;
+    logLines: string[];
+  };
+  failureReason?: string;
+  /** Fixed, non-polling snapshot annotation for seeded in-progress fixtures. */
+  snapshotLabel?: string;
+}
