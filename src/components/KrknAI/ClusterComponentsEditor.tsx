@@ -26,18 +26,40 @@ function withDisabledFlag(components: MockAiClusterComponents, location: Compone
     ...components,
     namespaces: components.namespaces.map((namespace, namespaceIndex) => {
       if (namespaceIndex !== location.namespaceIndex) return namespace;
-      if (location.kind === 'namespace') return { ...namespace, disabled };
+      if (location.kind === 'namespace') {
+        if (!disabled) return { ...namespace, disabled: false };
+        return {
+          ...namespace,
+          disabled: true,
+          pods: namespace.pods.map((pod) => ({
+            ...pod,
+            disabled: true,
+            containers: pod.containers.map((container) => ({ ...container, disabled: true })),
+          })),
+          services: namespace.services.map((service) => ({ ...service, disabled: true })),
+          pvcs: namespace.pvcs.map((pvc) => ({ ...pvc, disabled: true })),
+        };
+      }
       if (location.kind === 'pod') {
         return {
           ...namespace,
-          pods: namespace.pods.map((pod, podIndex) => podIndex === location.podIndex ? { ...pod, disabled } : pod),
+          pods: namespace.pods.map((pod, podIndex) => podIndex === location.podIndex
+            ? {
+              ...pod,
+              disabled,
+              ...(disabled ? { containers: pod.containers.map((container) => ({ ...container, disabled: true })) } : {}),
+            }
+            : pod),
         };
       }
       if (location.kind === 'container') {
         return {
           ...namespace,
           pods: namespace.pods.map((pod, podIndex) => podIndex === location.podIndex
-            ? { ...pod, containers: pod.containers.map((container, containerIndex) => containerIndex === location.containerIndex ? { ...container, disabled } : container) }
+            ? {
+              ...pod,
+              containers: pod.containers.map((container, containerIndex) => containerIndex === location.containerIndex ? { ...container, disabled } : container),
+            }
             : pod),
         };
       }
@@ -56,25 +78,25 @@ function withDisabledFlag(components: MockAiClusterComponents, location: Compone
 }
 
 export function ClusterComponentsEditor({ components, onChange }: ClusterComponentsEditorProps) {
-  const toggle = (location: ComponentLocation, disabled: boolean) => {
-    onChange(withDisabledFlag(components, location, disabled));
+  const toggleEnabled = (location: ComponentLocation, enabled: boolean) => {
+    onChange(withDisabledFlag(components, location, !enabled));
   };
 
   return (
     <div className="krkn-ai-component-editor">
-      <p className="krkn-ai-muted">Use the disabled flags to exclude discovered mock components from the generated YAML. Names and discovery metadata remain fixed.</p>
+      <p className="krkn-ai-muted">Components start enabled. Uncheck an item to set <code>disabled: true</code>; disabling a namespace disables its descendants.</p>
       <div className="krkn-ai-component-namespaces">
         {components.namespaces.map((namespace, namespaceIndex) => (
-          <details key={namespace.name} className="krkn-ai-component-namespace">
+          <details key={namespace.name} className="krkn-ai-component-namespace" open={namespaceIndex === 0}>
             <summary>
-              <strong>Namespace {namespace.name}</strong> · {namespace.disabled ? 'disabled' : 'enabled'}
+              <strong>Namespace {namespace.name}</strong> · {namespace.disabled ? 'Not enabled' : 'Enabled'}
             </summary>
             <div className="krkn-ai-component-namespace-content">
               <Checkbox
-                id={`krkn-ai-disable-namespace-${namespaceIndex}`}
-                label={`Disable namespace ${namespace.name}`}
-                isChecked={namespace.disabled}
-                onChange={(_event, checked) => toggle({ kind: 'namespace', namespaceIndex }, checked)}
+                id={`krkn-ai-enable-namespace-${namespaceIndex}`}
+                label={`Enable namespace ${namespace.name}`}
+                isChecked={!namespace.disabled}
+                onChange={(_event, checked) => toggleEnabled({ kind: 'namespace', namespaceIndex }, checked)}
               />
               <fieldset className="krkn-ai-component-group">
                 <legend>Pods and containers</legend>
@@ -82,10 +104,11 @@ export function ClusterComponentsEditor({ components, onChange }: ClusterCompone
                 {namespace.pods.map((pod, podIndex) => (
                   <div key={pod.name} className="krkn-ai-component-pod">
                     <Checkbox
-                      id={`krkn-ai-disable-pod-${namespaceIndex}-${podIndex}`}
-                      label={`Disable pod ${pod.name}`}
-                      isChecked={pod.disabled}
-                      onChange={(_event, checked) => toggle({ kind: 'pod', namespaceIndex, podIndex }, checked)}
+                      id={`krkn-ai-enable-pod-${namespaceIndex}-${podIndex}`}
+                      label={`Enable pod ${pod.name}`}
+                      isChecked={!pod.disabled}
+                      isDisabled={namespace.disabled}
+                      onChange={(_event, checked) => toggleEnabled({ kind: 'pod', namespaceIndex, podIndex }, checked)}
                     />
                     <div className="krkn-ai-component-children">
                       <span>Containers</span>
@@ -93,10 +116,11 @@ export function ClusterComponentsEditor({ components, onChange }: ClusterCompone
                       {pod.containers.map((container, containerIndex) => (
                         <Checkbox
                           key={containerIndex}
-                          id={`krkn-ai-disable-container-${namespaceIndex}-${podIndex}-${containerIndex}`}
-                          label={`Disable container ${container.name} in ${pod.name}`}
-                          isChecked={container.disabled}
-                          onChange={(_event, checked) => toggle({ kind: 'container', namespaceIndex, podIndex, containerIndex }, checked)}
+                          id={`krkn-ai-enable-container-${namespaceIndex}-${podIndex}-${containerIndex}`}
+                          label={`Enable container ${container.name} in ${pod.name}`}
+                          isChecked={!container.disabled}
+                          isDisabled={namespace.disabled || pod.disabled}
+                          onChange={(_event, checked) => toggleEnabled({ kind: 'container', namespaceIndex, podIndex, containerIndex }, checked)}
                         />
                       ))}
                     </div>
@@ -109,10 +133,11 @@ export function ClusterComponentsEditor({ components, onChange }: ClusterCompone
                 {namespace.services.map((service, componentIndex) => (
                   <Checkbox
                     key={service.name}
-                    id={`krkn-ai-disable-service-${namespaceIndex}-${componentIndex}`}
-                    label={`Disable service ${service.name}`}
-                    isChecked={service.disabled}
-                    onChange={(_event, checked) => toggle({ kind: 'service', namespaceIndex, componentIndex }, checked)}
+                    id={`krkn-ai-enable-service-${namespaceIndex}-${componentIndex}`}
+                    label={`Enable service ${service.name}`}
+                    isChecked={!service.disabled}
+                    isDisabled={namespace.disabled}
+                    onChange={(_event, checked) => toggleEnabled({ kind: 'service', namespaceIndex, componentIndex }, checked)}
                   />
                 ))}
               </fieldset>
@@ -122,10 +147,11 @@ export function ClusterComponentsEditor({ components, onChange }: ClusterCompone
                 {namespace.pvcs.map((pvc, componentIndex) => (
                   <Checkbox
                     key={pvc.name}
-                    id={`krkn-ai-disable-pvc-${namespaceIndex}-${componentIndex}`}
-                    label={`Disable PVC ${pvc.name}`}
-                    isChecked={pvc.disabled}
-                    onChange={(_event, checked) => toggle({ kind: 'pvc', namespaceIndex, componentIndex }, checked)}
+                    id={`krkn-ai-enable-pvc-${namespaceIndex}-${componentIndex}`}
+                    label={`Enable PVC ${pvc.name}`}
+                    isChecked={!pvc.disabled}
+                    isDisabled={namespace.disabled}
+                    onChange={(_event, checked) => toggleEnabled({ kind: 'pvc', namespaceIndex, componentIndex }, checked)}
                   />
                 ))}
               </fieldset>
@@ -139,10 +165,10 @@ export function ClusterComponentsEditor({ components, onChange }: ClusterCompone
         {components.nodes.map((node, componentIndex) => (
           <Checkbox
             key={node.name}
-            id={`krkn-ai-disable-node-${componentIndex}`}
-            label={`Disable node ${node.name}`}
-            isChecked={node.disabled}
-            onChange={(_event, checked) => toggle({ kind: 'node', componentIndex }, checked)}
+            id={`krkn-ai-enable-node-${componentIndex}`}
+            label={`Enable node ${node.name}`}
+            isChecked={!node.disabled}
+            onChange={(_event, checked) => toggleEnabled({ kind: 'node', componentIndex }, checked)}
           />
         ))}
       </fieldset>

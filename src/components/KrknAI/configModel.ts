@@ -41,19 +41,9 @@ export interface GeneticSettingsDraft {
   tournamentSize: string;
   populationInjectionRate: string;
   populationInjectionSize: string;
-  adaptiveEnabled: boolean;
-  adaptiveMin: string;
-  adaptiveMax: string;
-  adaptiveThreshold: string;
-  adaptiveGenerations: string;
-  fitnessThreshold: string;
-  generationSaturation: string;
-  explorationSaturation: string;
-  saturationThreshold: string;
 }
 
 export interface EditableConfigDraft {
-  kubeconfigFilePath: string;
   seed: string;
   waitDuration: string;
   baselineEnabled: boolean;
@@ -126,7 +116,6 @@ export function copyClusterComponents(components: MockAiClusterComponents): Mock
 export function createDefaultConfigDraft(target: MockAiTarget): EditableConfigDraft {
   const namespace = target.components.namespaces[0]?.name ?? 'default';
   return {
-    kubeconfigFilePath: '/input/kubeconfig',
     seed: '',
     waitDuration: '0',
     baselineEnabled: true,
@@ -150,15 +139,6 @@ export function createDefaultConfigDraft(target: MockAiTarget): EditableConfigDr
       tournamentSize: '6',
       populationInjectionRate: '0.0',
       populationInjectionSize: '2',
-      adaptiveEnabled: false,
-      adaptiveMin: '0.05',
-      adaptiveMax: '0.9',
-      adaptiveThreshold: '0.1',
-      adaptiveGenerations: '5',
-      fitnessThreshold: '',
-      generationSaturation: '',
-      explorationSaturation: '',
-      saturationThreshold: '0.0001',
     },
     healthChecks: target.healthChecks.map((healthCheck, key) => ({
       key,
@@ -210,9 +190,6 @@ export function validateConfigDraft(draft: EditableConfigDraft): ConfigValidatio
     if (error) errors[field] = error;
   };
   const genetic = draft.genetic;
-  if (!draft.kubeconfigFilePath.trim() || /[\r\n]/.test(draft.kubeconfigFilePath)) {
-    errors.kubeconfigFilePath = 'Enter a single-line kubeconfig path.';
-  }
 
   addError('seed', numberError(draft.seed, 'Seed', { integer: true, optional: true }));
   addError('waitDuration', numberError(draft.waitDuration, 'Wait duration', { min: 0 }));
@@ -227,14 +204,6 @@ export function validateConfigDraft(draft: EditableConfigDraft): ConfigValidatio
   addError('genetic.tournamentSize', numberError(genetic.tournamentSize, 'Tournament size', { min: 1, integer: true }));
   addError('genetic.populationInjectionRate', numberError(genetic.populationInjectionRate, 'Population injection rate', { min: 0, max: 1 }));
   addError('genetic.populationInjectionSize', numberError(genetic.populationInjectionSize, 'Population injection size', { min: 0, integer: true }));
-  addError('genetic.adaptiveMin', numberError(genetic.adaptiveMin, 'Adaptive minimum', { min: 0, max: 1 }));
-  addError('genetic.adaptiveMax', numberError(genetic.adaptiveMax, 'Adaptive maximum', { min: 0, max: 1 }));
-  addError('genetic.adaptiveThreshold', numberError(genetic.adaptiveThreshold, 'Adaptive threshold', { min: 0, max: 1 }));
-  addError('genetic.adaptiveGenerations', numberError(genetic.adaptiveGenerations, 'Adaptive generations', { min: 1, integer: true }));
-  addError('genetic.fitnessThreshold', numberError(genetic.fitnessThreshold, 'Fitness threshold', { optional: true }));
-  addError('genetic.generationSaturation', numberError(genetic.generationSaturation, 'Generation saturation', { min: 1, integer: true, optional: true }));
-  addError('genetic.explorationSaturation', numberError(genetic.explorationSaturation, 'Exploration saturation', { optional: true }));
-  addError('genetic.saturationThreshold', numberError(genetic.saturationThreshold, 'Saturation threshold', { min: 0, max: 1 }));
   addError('genetic.selectionStrategy', genetic.selectionStrategy.trim() ? undefined : 'Selection strategy is required.');
   addError('algorithm', draft.algorithm.trim() ? undefined : 'Algorithm is required.');
   addError('stopTimeout', numberError(draft.stopTimeout, 'Health-check stop timeout', { min: 0 }));
@@ -289,9 +258,6 @@ function yamlString(value: string): string {
   return JSON.stringify(value);
 }
 
-function yamlPath(value: string): string {
-  return /^\/[A-Za-z0-9_./-]+$/.test(value) ? value : yamlString(value);
-}
 
 function yamlNumber(value: string, optional = false): string {
   if (optional && value.trim() === '') return 'null';
@@ -303,7 +269,7 @@ export function buildMockConfigYaml(target: MockAiTarget, draft: EditableConfigD
   const lines = [
     '# Mock preview configuration; no credentials or live endpoints are used.',
     `# Synthetic target cluster: ${target.cluster.clusterName}`,
-    `kubeconfig_file_path: ${yamlPath(draft.kubeconfigFilePath)}`,
+    'kubeconfig_file_path: /input/kubeconfig',
     `seed: ${yamlNumber(draft.seed, true)}`,
     `wait_duration: ${yamlNumber(draft.waitDuration)}`,
     'baseline:',
@@ -348,17 +314,6 @@ export function buildMockConfigYaml(target: MockAiTarget, draft: EditableConfigD
     `  tournament_size: ${yamlNumber(genetic.tournamentSize)}`,
     `  population_injection_rate: ${yamlNumber(genetic.populationInjectionRate)}`,
     `  population_injection_size: ${yamlNumber(genetic.populationInjectionSize)}`,
-    '  adaptive_mutation:',
-    `    enable: ${genetic.adaptiveEnabled}`,
-    `    min: ${yamlNumber(genetic.adaptiveMin)}`,
-    `    max: ${yamlNumber(genetic.adaptiveMax)}`,
-    `    threshold: ${yamlNumber(genetic.adaptiveThreshold)}`,
-    `    generations: ${yamlNumber(genetic.adaptiveGenerations)}`,
-    '  stopping_criteria:',
-    `    fitness_threshold: ${yamlNumber(genetic.fitnessThreshold, true)}`,
-    `    generation_saturation: ${yamlNumber(genetic.generationSaturation, true)}`,
-    `    exploration_saturation: ${yamlNumber(genetic.explorationSaturation, true)}`,
-    `    saturation_threshold: ${yamlNumber(genetic.saturationThreshold)}`,
     'fitness_function:',
     `  query: ${yamlString(draft.fitnessQuery)}`,
     `  type: ${draft.fitnessType}`,

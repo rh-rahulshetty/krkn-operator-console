@@ -45,16 +45,6 @@ export function DiscoveryOptionsEditor({ options, errors, onChange }: DiscoveryO
             />
             {errors.nodeLabelPattern && <p className="krkn-ai-field-error" role="alert">{errors.nodeLabelPattern}</p>}
           </FormGroup>
-          <FormGroup label="Skip pod name pattern (optional)" fieldId="krkn-ai-discovery-skip-pod-name">
-            <TextInput
-              id="krkn-ai-discovery-skip-pod-name"
-              value={options.skipPodName}
-              onChange={(_event, value) => onChange('skipPodName', value)}
-              validated={errors.skipPodName ? 'error' : 'default'}
-              aria-invalid={!!errors.skipPodName}
-            />
-            {errors.skipPodName && <p className="krkn-ai-field-error" role="alert">{errors.skipPodName}</p>}
-          </FormGroup>
         </div>
       </CardBody>
     </Card>

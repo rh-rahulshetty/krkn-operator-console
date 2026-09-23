@@ -60,7 +60,7 @@ Run the client-only Krkn AI prototype with preview mode enabled:
 VITE_PREVIEW_MODE=true npm run dev -- --host 127.0.0.1
 ```
 
-Open `http://127.0.0.1:3000/app` and choose **Krkn AI** in the sidebar. Discovery filters default to `*`; per-resource disabled toggles, genetic settings, fitness items, and output formats appear in the generated YAML. Discovery data, seeded runs, and health-check URLs on the reserved `example.com` domain are illustrative. Creating a run updates only browser-session memory; the flow sends no Krkn AI or target API requests, never requests health-check URLs, and never creates Kubernetes resources.
+Open `http://127.0.0.1:3000/app` and choose **Krkn AI** in the sidebar. Discovery filters default to `*`; per-resource enable toggles serialize unchecked items with `disabled: true`. The editor groups genetic settings, fitness items, health checks, output formats, and discovered components by YAML category. Discovery data, seeded runs, and health-check URLs on the reserved `example.com` domain are illustrative. Creating a run updates only browser-session memory; the flow sends no Krkn AI or target API requests, never requests health-check URLs, and never creates Kubernetes resources.
 
 ### Other Commands
 

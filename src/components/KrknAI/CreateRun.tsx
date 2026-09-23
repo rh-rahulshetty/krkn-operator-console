@@ -322,22 +322,10 @@ export function CreateRun({ existingNames, onStart, onCancel }: CreateRunProps) 
 
       {step === 2 && selectedTarget && (
         <>
+
           <Card>
-            <CardTitle>Mock discovery result · cluster_components</CardTitle>
+            <CardTitle>Cluster components</CardTitle>
             <CardBody>
-              <p className="krkn-ai-muted">Illustrative components for <strong>{selectedTarget.cluster.clusterName}</strong>; no target API was called. Filters scope the synthetic inventory. Names and labels stay fixed; disabled flags are editable below.</p>
-              <dl className="krkn-ai-discovery-grid">
-                <div><dt>Namespace pattern</dt><dd>{discoveryOptions.namespacePattern}</dd></div>
-                <div><dt>Pod label-key pattern</dt><dd>{discoveryOptions.podLabelPattern}</dd></div>
-                <div><dt>Node label-key pattern</dt><dd>{discoveryOptions.nodeLabelPattern}</dd></div>
-                <div><dt>Skip pod name</dt><dd>{discoveryOptions.skipPodName || 'None'}</dd></div>
-                <div><dt>Namespaces</dt><dd>{draft.clusterComponents.namespaces.map((namespace) => namespace.name).join(', ') || 'None matched'}</dd></div>
-                <div><dt>Pods</dt><dd>{draft.clusterComponents.namespaces.flatMap((namespace) => namespace.pods.map((pod) => pod.name)).join(', ') || 'None discovered'}</dd></div>
-                <div><dt>Containers</dt><dd>{draft.clusterComponents.namespaces.flatMap((namespace) => namespace.pods.flatMap((pod) => pod.containers.map((container) => container.name))).join(', ') || 'None discovered'}</dd></div>
-                <div><dt>Services</dt><dd>{draft.clusterComponents.namespaces.flatMap((namespace) => namespace.services.map((service) => service.name)).join(', ') || 'None discovered'}</dd></div>
-                <div><dt>PVCs</dt><dd>{draft.clusterComponents.namespaces.flatMap((namespace) => namespace.pvcs.map((pvc) => pvc.name)).join(', ') || 'None discovered'}</dd></div>
-                <div><dt>Nodes</dt><dd>{draft.clusterComponents.nodes.map((node) => node.name).join(', ') || 'None discovered'}</dd></div>
-              </dl>
               {selectedTarget.recommendations.map((recommendation) => (
                 <Alert key={recommendation} variant="success" title="Recommendation" isInline>{recommendation}</Alert>
               ))}
@@ -347,13 +335,6 @@ export function CreateRun({ existingNames, onStart, onCancel }: CreateRunProps) 
               {discoveryWarnings.map((warning) => (
                 <Alert key={warning} variant="warning" title="Discovery filter warning" isInline>{warning}</Alert>
               ))}
-            </CardBody>
-          </Card>
-
-          <Card>
-            <CardTitle>Cluster components · disabled flags</CardTitle>
-            <CardBody>
-              <p className="krkn-ai-muted">Toggle discovered mock namespaces, pods, containers, services, PVCs, and nodes. Each choice updates its YAML <code>disabled</code> flag; no component is queried or created.</p>
               <ClusterComponentsEditor
                 components={draft.clusterComponents}
                 onChange={(components) => updateDraft({ clusterComponents: components })}
@@ -364,11 +345,8 @@ export function CreateRun({ existingNames, onStart, onCancel }: CreateRunProps) 
           <Card>
             <CardTitle>Run settings</CardTitle>
             <CardBody>
-              <p className="krkn-ai-muted">The kubeconfig path is a fixed placeholder and is never opened or uploaded.</p>
+              <p className="krkn-ai-muted">Kubeconfig is supplied by the runtime mount; this mock UI never reads or uploads credential files.</p>
               <div className="krkn-ai-config-fields">
-                <FormGroup label="Kubeconfig file path" fieldId="krkn-ai-kubeconfig-path">
-                  <TextInput id="krkn-ai-kubeconfig-path" value="/input/kubeconfig" readOnly isDisabled />
-                </FormGroup>
                 <ConfigNumberField
                   id="krkn-ai-seed"
                   label="Seed"
@@ -481,30 +459,6 @@ export function CreateRun({ existingNames, onStart, onCancel }: CreateRunProps) 
                 <ConfigNumberField id="krkn-ai-population-injection-rate" label="Population injection rate" value={draft.genetic.populationInjectionRate} onChange={(value) => updateGenetic('populationInjectionRate', value)} error={errorFor(configErrors, 'genetic.populationInjectionRate')} min={0} max={1} step="any" />
                 <ConfigNumberField id="krkn-ai-population-injection-size" label="Population injection size" value={draft.genetic.populationInjectionSize} onChange={(value) => updateGenetic('populationInjectionSize', value)} error={errorFor(configErrors, 'genetic.populationInjectionSize')} min={0} step={1} />
               </div>
-              <section className="krkn-ai-config-subsection" aria-labelledby="krkn-ai-adaptive-heading">
-                <h3 id="krkn-ai-adaptive-heading">Adaptive mutation</h3>
-                <Checkbox
-                  id="krkn-ai-adaptive-enabled"
-                  label="Enable adaptive mutation"
-                  isChecked={draft.genetic.adaptiveEnabled}
-                  onChange={(_event, checked) => updateGenetic('adaptiveEnabled', checked)}
-                />
-                <div className="krkn-ai-config-fields">
-                  <ConfigNumberField id="krkn-ai-adaptive-min" label="Minimum" value={draft.genetic.adaptiveMin} onChange={(value) => updateGenetic('adaptiveMin', value)} error={errorFor(configErrors, 'genetic.adaptiveMin')} min={0} max={1} step="any" />
-                  <ConfigNumberField id="krkn-ai-adaptive-max" label="Maximum" value={draft.genetic.adaptiveMax} onChange={(value) => updateGenetic('adaptiveMax', value)} error={errorFor(configErrors, 'genetic.adaptiveMax')} min={0} max={1} step="any" />
-                  <ConfigNumberField id="krkn-ai-adaptive-threshold" label="Threshold" value={draft.genetic.adaptiveThreshold} onChange={(value) => updateGenetic('adaptiveThreshold', value)} error={errorFor(configErrors, 'genetic.adaptiveThreshold')} min={0} max={1} step="any" />
-                  <ConfigNumberField id="krkn-ai-adaptive-generations" label="Adaptive mutation generations" value={draft.genetic.adaptiveGenerations} onChange={(value) => updateGenetic('adaptiveGenerations', value)} error={errorFor(configErrors, 'genetic.adaptiveGenerations')} min={1} step={1} />
-                </div>
-              </section>
-              <section className="krkn-ai-config-subsection" aria-labelledby="krkn-ai-stopping-heading">
-                <h3 id="krkn-ai-stopping-heading">Stopping criteria</h3>
-                <div className="krkn-ai-config-fields">
-                  <ConfigNumberField id="krkn-ai-fitness-threshold" label="Fitness threshold" value={draft.genetic.fitnessThreshold} onChange={(value) => updateGenetic('fitnessThreshold', value)} error={errorFor(configErrors, 'genetic.fitnessThreshold')} step="any" optional />
-                  <ConfigNumberField id="krkn-ai-generation-saturation" label="Generation saturation" value={draft.genetic.generationSaturation} onChange={(value) => updateGenetic('generationSaturation', value)} error={errorFor(configErrors, 'genetic.generationSaturation')} min={1} step={1} optional />
-                  <ConfigNumberField id="krkn-ai-exploration-saturation" label="Exploration saturation" value={draft.genetic.explorationSaturation} onChange={(value) => updateGenetic('explorationSaturation', value)} error={errorFor(configErrors, 'genetic.explorationSaturation')} step="any" optional />
-                  <ConfigNumberField id="krkn-ai-saturation-threshold" label="Saturation threshold" value={draft.genetic.saturationThreshold} onChange={(value) => updateGenetic('saturationThreshold', value)} error={errorFor(configErrors, 'genetic.saturationThreshold')} min={0} max={1} step="any" />
-                </div>
-              </section>
             </CardBody>
           </Card>
 
@@ -537,7 +491,7 @@ export function CreateRun({ existingNames, onStart, onCancel }: CreateRunProps) 
           <Card>
             <CardTitle>Generated krkn-ai.yaml preview</CardTitle>
             <CardBody>
-              <p className="krkn-ai-muted">Read-only deterministic preview. Health-check URLs use reserved mock example.com hosts and are never requested. The kubeconfig path is a fixed placeholder; credentials, host parameters, headers, and live endpoints are omitted.</p>
+              <p className="krkn-ai-muted">Read-only deterministic preview. Health-check URLs use reserved mock example.com hosts and are never requested. Kubeconfig stays on its runtime mount; credentials, host parameters, headers, and live endpoints are omitted.</p>
               <textarea className="krkn-ai-yaml" aria-label="Generated krkn-ai.yaml preview" value={configPreview} readOnly rows={32} />
               {Object.keys(configErrors).length > 0 && <p className="krkn-ai-field-error" role="status">Fix the highlighted settings before creating this mock config.</p>}
             </CardBody>
@@ -564,7 +518,6 @@ export function CreateRun({ existingNames, onStart, onCancel }: CreateRunProps) 
                 <div><dt>Namespace pattern</dt><dd>{createdConfig.discoveryOptions.namespacePattern}</dd></div>
                 <div><dt>Pod label-key pattern</dt><dd>{createdConfig.discoveryOptions.podLabelPattern}</dd></div>
                 <div><dt>Node label-key pattern</dt><dd>{createdConfig.discoveryOptions.nodeLabelPattern}</dd></div>
-                <div><dt>Skip pod name</dt><dd>{createdConfig.discoveryOptions.skipPodName || 'None'}</dd></div>
               </dl>
               <p className="krkn-ai-muted">This complete YAML config is frozen in memory. Returning to edit any setting requires creating the config again.</p>
               <pre className="krkn-ai-yaml" aria-label="Frozen mock configuration YAML">{createdConfig.yaml}</pre>

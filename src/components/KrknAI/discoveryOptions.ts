@@ -5,7 +5,6 @@ export interface MockDiscoveryOptions {
   namespacePattern: string;
   podLabelPattern: string;
   nodeLabelPattern: string;
-  skipPodName: string;
 }
 
 export type DiscoveryOptionErrors = Record<keyof MockDiscoveryOptions, string>;
@@ -14,7 +13,6 @@ export const defaultMockDiscoveryOptions: MockDiscoveryOptions = {
   namespacePattern: '*',
   podLabelPattern: '*',
   nodeLabelPattern: '*',
-  skipPodName: '',
 };
 
 interface PatternMatcher {
@@ -80,7 +78,6 @@ export function validateMockDiscoveryOptions(options: MockDiscoveryOptions): Par
     ['namespacePattern', options.namespacePattern, false, 'Namespace'],
     ['podLabelPattern', options.podLabelPattern, true, 'Pod label-key'],
     ['nodeLabelPattern', options.nodeLabelPattern, true, 'Node label-key'],
-    ['skipPodName', options.skipPodName, false, 'Skip pod name'],
   ];
   for (const [field, value, defaultMatchAll, label] of patterns) {
     const matcher = createPatternMatcher(value, defaultMatchAll);
@@ -105,7 +102,6 @@ export function discoverMockComponents(target: MockAiTarget, options: MockDiscov
   const namespaceMatcher = createPatternMatcher(options.namespacePattern, false);
   const podLabelMatcher = createPatternMatcher(options.podLabelPattern, true);
   const nodeLabelMatcher = createPatternMatcher(options.nodeLabelPattern, true);
-  const skipPodMatcher = createPatternMatcher(options.skipPodName, false);
   if (!nodeLabelMatcher.matchAll && nodeLabelMatcher.includePatterns.length > 0
     && !nodeLabelMatcher.matches('kubernetes.io/hostname')) {
     nodeLabelMatcher.includePatterns.push(compilePattern('kubernetes.io/hostname'));
@@ -115,9 +111,7 @@ export function discoverMockComponents(target: MockAiTarget, options: MockDiscov
     .filter((namespace) => namespaceMatcher.matches(namespace.name))
     .map((namespace) => ({
       ...namespace,
-      pods: namespace.pods
-        .filter((pod) => !skipPodMatcher.matches(pod.name))
-        .map((pod) => ({ ...pod, labels: filteredLabels(pod.labels, podLabelMatcher) })),
+      pods: namespace.pods.map((pod) => ({ ...pod, labels: filteredLabels(pod.labels, podLabelMatcher) })),
     }));
   components.nodes = components.nodes.map((node) => ({
     ...node,

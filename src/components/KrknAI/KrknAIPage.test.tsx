@@ -104,6 +104,7 @@ describe('Krkn AI mock run creation', () => {
     const { onStart } = renderCreateRun();
     await user.type(screen.getByRole('textbox', { name: /Run name/ }), 'fitness-edit');
     await user.click(screen.getByRole('button', { name: 'Discover components' }));
+    expect(screen.queryByText('Kubeconfig file path')).not.toBeInTheDocument();
 
     expect(screen.getByText('Algorithm · genetic')).toBeInTheDocument();
     expect(screen.getByText('Health checks')).toBeInTheDocument();
@@ -136,8 +137,8 @@ describe('Krkn AI mock run creation', () => {
     expect(preview).toContain('query: "sum(kube_pod_container_status_restarts_total) * 2"');
     expect(preview).toContain('weight: 0.2');
     expect(preview).toContain('url: "https://health-preview.example.com/ready"');
-    expect(preview).toContain('adaptive_mutation:');
-    expect(preview).toContain('stopping_criteria:');
+    expect(preview).not.toContain('adaptive_mutation:');
+    expect(preview).not.toContain('stopping_criteria:');
     expect(preview).toContain('mutation_rate: 0.4');
     expect(preview).toContain('result_name_fmt: "custom_%s.yaml"');
     expect(screen.getByRole('button', { name: 'Create config (mock)' })).toBeEnabled();
@@ -176,7 +177,6 @@ describe('Krkn AI mock run creation', () => {
     expect(screen.getByRole('textbox', { name: 'Namespace pattern' })).toHaveValue('*');
     expect(screen.getByRole('textbox', { name: 'Pod label-key pattern' })).toHaveValue('*');
     expect(screen.getByRole('textbox', { name: 'Node label-key pattern' })).toHaveValue('*');
-    expect(screen.getByRole('textbox', { name: 'Skip pod name pattern (optional)' })).toHaveValue('');
     const namespacePattern = screen.getByRole('textbox', { name: 'Namespace pattern' });
     fireEvent.change(namespacePattern, { target: { value: '[' } });
     expect(screen.getByText(/Namespace pattern is invalid/)).toBeInTheDocument();
@@ -187,62 +187,66 @@ describe('Krkn AI mock run creation', () => {
     await user.click(screen.getByRole('button', { name: 'Discover components' }));
 
     const preview = (screen.getByLabelText('Generated krkn-ai.yaml preview') as HTMLTextAreaElement).value;
-    expect(screen.getByText(/cart-1, payment-1/)).toBeInTheDocument();
+    expect(screen.queryByText('Namespace pattern')).not.toBeInTheDocument();
+    expect(preview).toContain('name: "cart-1"');
+    expect(preview).toContain('name: "payment-1"');
     expect(preview).toContain('shop-staging');
     expect(preview).not.toContain('robot-shop');
     expect(preview).toContain('https://shop-staging-health.staging-west.example.com/healthz');
   });
 
-  it('applies namespace, label-key, and skipped-pod patterns to mock discovery', async () => {
+  it('applies namespace and label-key patterns during mock discovery', async () => {
     const user = userEvent.setup();
     renderCreateRun();
     await user.type(screen.getByRole('textbox', { name: /Run name/ }), 'filtered-discovery');
     const namespacePattern = screen.getByRole('textbox', { name: 'Namespace pattern' });
     const podLabelPattern = screen.getByRole('textbox', { name: 'Pod label-key pattern' });
     const nodeLabelPattern = screen.getByRole('textbox', { name: 'Node label-key pattern' });
-    const skipPodPattern = screen.getByRole('textbox', { name: 'Skip pod name pattern (optional)' });
     await user.clear(namespacePattern);
     await user.type(namespacePattern, 'robot-shop');
     await user.clear(podLabelPattern);
     await user.type(podLabelPattern, 'service');
     await user.clear(nodeLabelPattern);
     await user.type(nodeLabelPattern, 'node-role.*');
-    await user.clear(skipPodPattern);
-    await user.type(skipPodPattern, 'cart-.*');
     await user.click(screen.getByRole('button', { name: 'Discover components' }));
 
     const preview = (screen.getByLabelText('Generated krkn-ai.yaml preview') as HTMLTextAreaElement).value;
-    expect(preview).not.toContain('name: "cart-1"');
+    expect(preview).toContain('name: "cart-1"');
     expect(preview).toContain('name: "payment-1"');
     expect(preview).toContain('"service": "payment"');
     expect(preview).toContain('"node-role.kubernetes.io/worker"');
     expect(preview).toContain('"kubernetes.io/hostname"');
   }, 15_000);
 
-  it('serializes disabled flags for every discovered component kind', async () => {
+  it('uses enabled component checkboxes and cascades namespace disable flags', async () => {
     const user = userEvent.setup();
     renderCreateRun();
     await user.type(screen.getByRole('textbox', { name: /Run name/ }), 'component-flags');
     await user.click(screen.getByRole('button', { name: 'Discover components' }));
-    await user.click(screen.getByText('Namespace robot-shop'));
-    for (const name of [
-      'Disable namespace robot-shop',
-      'Disable pod cart-1',
-      'Disable container cart in cart-1',
-      'Disable service cart',
-      'Disable PVC data-redis-0',
-      'Disable node worker-1',
-    ]) {
-      await user.click(screen.getByRole('checkbox', { name }));
-    }
 
-    const preview = (screen.getByLabelText('Generated krkn-ai.yaml preview') as HTMLTextAreaElement).value;
-    expect((preview.match(/disabled: true/g) ?? [])).toHaveLength(6);
+    const namespaceToggle = screen.getByRole('checkbox', { name: 'Enable namespace robot-shop' });
+    expect(namespaceToggle).toBeChecked();
+    expect(screen.getByRole('checkbox', { name: 'Enable pod cart-1' })).toBeChecked();
+    await user.click(namespaceToggle);
+
+    let preview = (screen.getByLabelText('Generated krkn-ai.yaml preview') as HTMLTextAreaElement).value;
     expect(preview).toMatch(/name: "robot-shop"\s+disabled: true/);
     expect(preview).toMatch(/name: "cart-1"\s+disabled: true/);
     expect(preview).toMatch(/containers:\s+- name: "cart"\s+disabled: true/);
     expect(preview).toMatch(/services:\s+- name: "cart"\s+disabled: true/);
     expect(preview).toMatch(/name: "data-redis-0"\s+disabled: true/);
+    expect(screen.getByRole('checkbox', { name: 'Enable pod cart-1' })).toBeDisabled();
+
+    await user.click(screen.getByRole('checkbox', { name: 'Enable namespace robot-shop' }));
+    const podToggle = screen.getByRole('checkbox', { name: 'Enable pod cart-1' });
+    expect(podToggle).toBeEnabled();
+    expect(podToggle).not.toBeChecked();
+    await user.click(podToggle);
+    await user.click(screen.getByRole('checkbox', { name: 'Enable node worker-1' }));
+    preview = (screen.getByLabelText('Generated krkn-ai.yaml preview') as HTMLTextAreaElement).value;
+    expect(preview).toMatch(/name: "robot-shop"\s+disabled: false/);
+    expect(preview).toMatch(/name: "cart-1"\s+disabled: false/);
+    expect(preview).toMatch(/containers:\s+- name: "cart"\s+disabled: true/);
     expect(preview).toMatch(/name: "worker-1"\s+disabled: true/);
   }, 15_000);
 });
