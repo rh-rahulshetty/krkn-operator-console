@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { useState } from 'react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
@@ -71,7 +71,7 @@ describe('Krkn AI mock run creation', () => {
       completedGenerations: 0,
       scenarios: [],
       progression: [],
-      orchestrator: expect.objectContaining({ status: 'Pending' }),
+      mainPod: expect.objectContaining({ status: 'Pending' }),
       configYaml: expect.stringContaining('kubeconfig_file_path: /input/kubeconfig'),
     }));
     const createdRun = onStart.mock.calls[0][0];
@@ -258,7 +258,7 @@ function StatefulMockPage() {
 }
 
 describe('Krkn AI run inspection', () => {
-  it('shows observed fixture progress and drills into generation two and failed scenario 17', async () => {
+  it('shows run config and drills into scalable generation and scenario selectors', async () => {
     const user = userEvent.setup();
     render(<KrknAIPage runs={mockAiRuns} onAddRun={vi.fn()} />);
 
@@ -269,16 +269,23 @@ describe('Krkn AI run inspection', () => {
     expect(screen.getByRole('row', { name: /Open run staging-preview-in-progress/ })).toHaveTextContent('8 / 24');
 
     await user.click(completedRow);
-    expect(screen.getByRole('heading', { name: 'Generation 2 scenarios' })).toBeInTheDocument();
-    const fitnessTable = screen.getByRole('table', { name: /Numeric fitness values/ });
-    expect(within(fitnessTable).getByText('26.798')).toBeInTheDocument();
-    expect(within(fitnessTable).getByText('30.4453')).toBeInTheDocument();
-    await user.click(screen.getByRole('button', { name: /Scenario 6/ }));
-    expect(screen.getAllByText('30.4453 fitness units').length).toBeGreaterThan(0);
+    expect(screen.getByText('Scenarios executed').nextSibling).toHaveTextContent('24');
+    expect(screen.queryByRole('heading', { name: 'Uploader' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: 'Orchestrator' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('table', { name: /Numeric fitness values/ })).not.toBeInTheDocument();
 
-    await user.click(screen.getByRole('button', { name: /Generation 5/ }));
-    expect(screen.getByRole('heading', { name: 'Generation 5 scenarios' })).toBeInTheDocument();
-    expect(screen.getByText(/individual scenario failed; the overall run phase is Succeeded/)).toBeInTheDocument();
+    await user.click(screen.getByText('View krkn-ai.yaml used for this run'));
+    expect(screen.getByText(/kubeconfig_file_path: \/input\/kubeconfig/)).toBeInTheDocument();
+    expect(screen.getByRole('combobox', { name: 'Generation' })).toHaveValue('1');
+    expect(screen.getByRole('combobox', { name: 'Scenario execution' })).toHaveValue('6');
+    expect(screen.getByRole('heading', { name: 'Scenario 6: storage-throttle' })).toBeInTheDocument();
+    expect(screen.getByText('Fitness function result')).toBeInTheDocument();
+    expect(screen.getByText('--scenario storage-throttle --namespace robot-shop', { exact: false })).toBeInTheDocument();
+
+    await user.selectOptions(screen.getByRole('combobox', { name: 'Generation' }), '4');
+    expect(screen.getByRole('combobox', { name: 'Scenario execution' })).toHaveValue('17');
+    expect(screen.getByRole('heading', { name: 'Scenario 17: container-scenarios' })).toBeInTheDocument();
+    expect(screen.getByText(/scenario failed; the overall run phase is Succeeded/)).toBeInTheDocument();
     expect(screen.getAllByText('-1 fitness units').length).toBeGreaterThan(0);
   });
 

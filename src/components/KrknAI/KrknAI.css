@@ -137,28 +137,10 @@
   font-size: 0.8rem;
 }
 
-.krkn-ai-fitness-chart,
-.krkn-ai-scenario-fitness-chart {
+.krkn-ai-fitness-chart {
   width: 100%;
 }
 
-.krkn-ai-generation-card {
-  display: grid;
-  gap: 0.35rem;
-  width: 100%;
-  min-height: 7rem;
-  padding: 0.85rem;
-  border: 1px solid var(--krkn-ai-border);
-  border-radius: 4px;
-  background: var(--krkn-ai-surface);
-  color: inherit;
-  text-align: left;
-  cursor: pointer;
-}
-
-.krkn-ai-generation-card[aria-pressed='true'] {
-  border: 2px solid var(--pf-v5-global--primary-color--100, #0066cc);
-}
 
 .krkn-ai-scenario-detail {
   margin-block-start: 1rem;
@@ -274,7 +256,7 @@
 }
 
 .krkn-ai-run-detail__metadata,
-.krkn-ai-run-detail__status-card dl,
+.krkn-ai-main-pod__metadata,
 .krkn-ai-scenario-detail__summary,
 .krkn-ai-scenario-detail__parameters,
 .krkn-ai-scenario-detail__metrics,
@@ -286,7 +268,7 @@
 }
 
 .krkn-ai-run-detail__metadata > div,
-.krkn-ai-run-detail__status-card dl > div,
+.krkn-ai-main-pod__metadata > div,
 .krkn-ai-scenario-detail__summary > div,
 .krkn-ai-scenario-detail__parameters > div,
 .krkn-ai-scenario-detail__metrics > div,
@@ -299,7 +281,7 @@
 }
 
 .krkn-ai-run-detail__metadata dt,
-.krkn-ai-run-detail__status-card dt,
+.krkn-ai-main-pod__metadata dt,
 .krkn-ai-scenario-detail dt {
   color: var(--krkn-ai-muted);
   font-size: 0.8125rem;
@@ -307,20 +289,34 @@
 }
 
 .krkn-ai-run-detail__metadata dd,
-.krkn-ai-run-detail__status-card dd,
+.krkn-ai-main-pod__metadata dd,
 .krkn-ai-scenario-detail dd {
   margin: 0.25rem 0 0;
 }
 
-.krkn-ai-run-detail__status-grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 1rem;
+.krkn-ai-main-pod__metadata {
+  margin-block-end: 1rem;
 }
 
-.krkn-ai-run-detail__status-card .pf-v5-c-card__title,
+.krkn-ai-run-detail__config .pf-v5-c-card__title,
 .krkn-ai-run-detail__main-logs .pf-v5-c-card__title {
   padding-block-end: 0;
+}
+
+.krkn-ai-run-detail__config summary {
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.krkn-ai-run-detail__yaml {
+  max-height: 32rem;
+  overflow: auto;
+  padding: 1rem;
+  border: 1px solid var(--krkn-ai-border);
+  border-radius: 4px;
+  background: var(--krkn-ai-surface);
+  color: inherit;
+  font: 0.8125rem/1.5 var(--pf-v5-global--font-family--monospace, monospace);
 }
 
 .krkn-ai-run-detail__failure,
@@ -347,58 +343,47 @@
   overflow-wrap: anywhere;
 }
 
-.krkn-ai-generation-list {
+.krkn-ai-scenario-explorer__intro {
+  margin-block-start: 0;
+  color: var(--krkn-ai-muted);
+}
+
+.krkn-ai-scenario-explorer__selectors {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr));
-  gap: 0.75rem;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+  margin-block-end: 1rem;
 }
 
-.krkn-ai-generation-card {
-  justify-items: start;
-}
-
-.krkn-ai-generation-card--selected {
-  border: 2px solid var(--pf-v5-global--primary-color--100, #0066cc);
-}
-
-.krkn-ai-generation-card__title {
-  font-weight: 700;
-}
-
-.krkn-ai-scenario-list {
-  margin-block-start: 1rem;
-}
-
-.krkn-ai-scenario-list__items {
+.krkn-ai-scenario-explorer__selectors label {
   display: grid;
-  gap: 0.5rem;
-  padding: 0;
-  list-style: none;
+  gap: 0.4rem;
+  min-width: 0;
+  font-weight: 600;
 }
 
-.krkn-ai-scenario-row {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  align-items: center;
+.krkn-ai-scenario-explorer__selectors select {
   width: 100%;
-  gap: 0.5rem;
-  padding: 0.75rem;
+  min-height: 2.5rem;
+  padding: 0.45rem 2rem 0.45rem 0.65rem;
   border: 1px solid var(--krkn-ai-border);
   border-radius: 4px;
   background: var(--krkn-ai-surface);
   color: inherit;
-  text-align: left;
-  cursor: pointer;
 }
 
-.krkn-ai-scenario-row--selected,
-.krkn-ai-scenario-row:hover,
-.krkn-ai-scenario-row:focus-visible {
-  border-color: var(--pf-v5-global--primary-color--100, #0066cc);
+.krkn-ai-scenario-detail__pod {
+  margin-block: 0.35rem 0;
+  color: var(--krkn-ai-muted);
+  font-weight: 400;
 }
 
-.krkn-ai-scenario-row__name {
-  font-weight: 700;
+.krkn-ai-scenario-detail__arguments {
+  margin-block-start: 1rem;
+}
+
+.krkn-ai-scenario-detail__arguments h5 {
+  margin-block: 0 0.5rem;
 }
 
 .krkn-ai-scenario-detail__section {
@@ -409,13 +394,11 @@
   margin-block: 0 0.75rem;
 }
 
-.krkn-ai-fitness-chart__figure,
-.krkn-ai-scenario-fitness-chart__figure {
+.krkn-ai-fitness-chart__figure {
   margin: 0;
 }
 
-.krkn-ai-fitness-chart__svg,
-.krkn-ai-scenario-fitness-chart__svg {
+.krkn-ai-fitness-chart__svg {
   display: block;
   width: 100%;
   height: auto;
@@ -424,19 +407,14 @@
 }
 
 .krkn-ai-fitness-chart__gridline line,
-.krkn-ai-scenario-fitness-chart__gridline line,
-.krkn-ai-fitness-chart__axis,
-.krkn-ai-scenario-fitness-chart__axis {
+.krkn-ai-fitness-chart__axis {
   stroke: var(--krkn-ai-border);
   stroke-width: 1;
 }
 
 .krkn-ai-fitness-chart__gridline text,
-.krkn-ai-scenario-fitness-chart__gridline text,
 .krkn-ai-fitness-chart__tick text,
-.krkn-ai-fitness-chart__axis-label,
-.krkn-ai-scenario-fitness-chart__axis-label,
-.krkn-ai-scenario-fitness-chart__datum text {
+.krkn-ai-fitness-chart__axis-label {
   fill: currentColor;
   font-family: inherit;
   font-size: 12px;
@@ -464,16 +442,14 @@
   stroke-width: 3;
 }
 
-.krkn-ai-fitness-chart__legend,
-.krkn-ai-scenario-fitness-chart__legend {
+.krkn-ai-fitness-chart__legend {
   display: flex;
   flex-wrap: wrap;
   gap: 1rem;
   margin-block: 0.75rem 1rem;
 }
 
-.krkn-ai-fitness-chart__legend-item,
-.krkn-ai-scenario-fitness-chart__legend-item {
+.krkn-ai-fitness-chart__legend-item {
   display: inline-flex;
   align-items: center;
   gap: 0.4rem;
@@ -494,44 +470,6 @@
   color: var(--krkn-ai-average);
 }
 
-.krkn-ai-fitness-chart__table {
-  width: 100%;
-  border-collapse: collapse;
-  text-align: left;
-}
-
-.krkn-ai-fitness-chart__table th,
-.krkn-ai-fitness-chart__table td {
-  padding: 0.65rem;
-  border-block-end: 1px solid var(--krkn-ai-border);
-}
-
-.krkn-ai-fitness-chart__table caption {
-  padding: 0.5rem;
-  text-align: left;
-  color: var(--krkn-ai-muted);
-}
-
-.krkn-ai-scenario-fitness-chart__point {
-  fill: var(--pf-v5-global--success-color--100, #3e8635);
-}
-
-.krkn-ai-scenario-fitness-chart__point--failed {
-  fill: var(--pf-v5-global--danger-color--100, #c9190b);
-}
-
-.krkn-ai-scenario-fitness-chart__legend-item--succeeded::before,
-.krkn-ai-scenario-fitness-chart__legend-item--failed::before {
-  width: 0.75rem;
-  height: 0.75rem;
-  border-radius: 50%;
-  background: var(--pf-v5-global--success-color--100, #3e8635);
-  content: '';
-}
-
-.krkn-ai-scenario-fitness-chart__legend-item--failed::before {
-  background: var(--pf-v5-global--danger-color--100, #c9190b);
-}
 
 @media (max-width: 768px) {
   .krkn-ai-run-list__toolbar {
@@ -539,17 +477,13 @@
     flex-direction: column;
   }
 
-  .krkn-ai-run-detail__status-grid {
-    grid-template-columns: minmax(0, 1fr);
-  }
-
-  .krkn-ai-scenario-row {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
   .krkn-ai-run-detail__title-row {
     align-items: flex-start;
     flex-direction: column;
+  }
+
+  .krkn-ai-scenario-explorer__selectors {
+    grid-template-columns: minmax(0, 1fr);
   }
 }
 

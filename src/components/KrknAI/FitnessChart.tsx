@@ -1,14 +1,10 @@
-import type { MockAiFitnessPoint, MockAiScenario } from './types';
+import type { MockAiFitnessPoint } from './types';
 
 interface FitnessChartProps {
   points: MockAiFitnessPoint[];
   runName: string;
 }
 
-interface ScenarioFitnessChartProps {
-  scenarios: MockAiScenario[];
-  generation: number;
-}
 
 const formatFitness = (value: number) => value.toLocaleString(undefined, {
   maximumFractionDigits: 4,
@@ -148,116 +144,7 @@ export function FitnessChart({ points, runName }: FitnessChartProps) {
           <span className="krkn-ai-fitness-chart__legend-item krkn-ai-fitness-chart__legend-item--average">Average fitness</span>
         </figcaption>
       </figure>
-      <table className="krkn-ai-fitness-chart__table" aria-label={`Numeric fitness values for ${runName}`}>
-        <caption>Observed fitness by generation (fitness units)</caption>
-        <thead>
-          <tr>
-            <th scope="col">Generation</th>
-            <th scope="col">Best fitness</th>
-            <th scope="col">Average fitness</th>
-          </tr>
-        </thead>
-        <tbody>
-          {sortedPoints.map((point) => (
-            <tr key={point.generation}>
-              <th scope="row">{point.generation + 1}</th>
-              <td>{formatFitness(point.best)}</td>
-              <td>{formatFitness(point.average)}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
     </section>
   );
 }
 
-export function ScenarioFitnessChart({ scenarios, generation }: ScenarioFitnessChartProps) {
-  const generationScenarios = scenarios
-    .filter((scenario) => scenario.generation === generation)
-    .sort((a, b) => a.scenarioId - b.scenarioId);
-
-  if (generationScenarios.length === 0) {
-    return (
-      <section className="krkn-ai-scenario-fitness-chart" aria-labelledby="krkn-ai-scenario-fitness-heading">
-        <h3 id="krkn-ai-scenario-fitness-heading">Scenario fitness distribution</h3>
-        <p className="krkn-ai-not-available">Not available yet</p>
-      </section>
-    );
-  }
-
-  const width = 720;
-  const rowHeight = 30;
-  const height = Math.max(220, 84 + generationScenarios.length * rowHeight);
-  const margin = { top: 22, right: 24, bottom: 58, left: 116 };
-  const plotWidth = width - margin.left - margin.right;
-  const plotHeight = height - margin.top - margin.bottom;
-  const [minFitness, maxFitness] = getExpandedDomain(generationScenarios.map((scenario) => scenario.fitnessScore));
-  const x = (fitness: number) => margin.left + ((fitness - minFitness) / (maxFitness - minFitness)) * plotWidth;
-  const y = (index: number) => margin.top + (generationScenarios.length === 1
-    ? plotHeight / 2
-    : (index / (generationScenarios.length - 1)) * plotHeight);
-  const ticks = Array.from({ length: 5 }, (_, index) => minFitness + ((maxFitness - minFitness) * index) / 4);
-
-  return (
-    <section className="krkn-ai-scenario-fitness-chart" aria-labelledby="krkn-ai-scenario-fitness-heading">
-      <h3 id="krkn-ai-scenario-fitness-heading">Scenario fitness distribution</h3>
-      <figure className="krkn-ai-scenario-fitness-chart__figure">
-        <svg
-          className="krkn-ai-scenario-fitness-chart__svg"
-          viewBox={`0 0 ${width} ${height}`}
-          role="img"
-          aria-label={`Fitness score distribution for ${generationScenarios.length} scenarios in generation ${generation + 1}. Scores are fitness units, not percentages.`}
-          preserveAspectRatio="xMidYMid meet"
-        >
-          {ticks.map((tick, index) => (
-            <g key={`tick-${index}`} className="krkn-ai-scenario-fitness-chart__gridline">
-              <line x1={x(tick)} x2={x(tick)} y1={margin.top} y2={height - margin.bottom} />
-              <text x={x(tick)} y={height - margin.bottom + 20} textAnchor="middle">{formatFitness(tick)}</text>
-            </g>
-          ))}
-          <line
-            className="krkn-ai-scenario-fitness-chart__axis"
-            x1={margin.left}
-            x2={width - margin.right}
-            y1={height - margin.bottom}
-            y2={height - margin.bottom}
-          />
-          {generationScenarios.map((scenario, index) => (
-            <g key={scenario.scenarioId} className="krkn-ai-scenario-fitness-chart__datum">
-              <text x={margin.left - 10} y={y(index) + 4} textAnchor="end">Scenario {scenario.scenarioId}</text>
-              <circle
-                className={`krkn-ai-scenario-fitness-chart__point ${scenario.outcome === 'Failed' ? 'krkn-ai-scenario-fitness-chart__point--failed' : 'krkn-ai-scenario-fitness-chart__point--succeeded'}`}
-                cx={x(scenario.fitnessScore)}
-                cy={y(index)}
-                r="6"
-              >
-                <title>Scenario {scenario.scenarioId}, {scenario.outcome.toLowerCase()}, fitness {formatFitness(scenario.fitnessScore)}</title>
-              </circle>
-            </g>
-          ))}
-          <text
-            className="krkn-ai-scenario-fitness-chart__axis-label"
-            x={margin.left + plotWidth / 2}
-            y={height - 12}
-            textAnchor="middle"
-          >
-            Fitness score (fitness units)
-          </text>
-          <text
-            className="krkn-ai-scenario-fitness-chart__axis-label"
-            x={20}
-            y={margin.top + plotHeight / 2}
-            textAnchor="middle"
-            transform={`rotate(-90 20 ${margin.top + plotHeight / 2})`}
-          >
-            Scenario
-          </text>
-        </svg>
-        <figcaption className="krkn-ai-scenario-fitness-chart__legend" aria-label="Scenario outcomes">
-          <span className="krkn-ai-scenario-fitness-chart__legend-item krkn-ai-scenario-fitness-chart__legend-item--succeeded">Succeeded scenario</span>
-          <span className="krkn-ai-scenario-fitness-chart__legend-item krkn-ai-scenario-fitness-chart__legend-item--failed">Failed scenario</span>
-        </figcaption>
-      </figure>
-    </section>
-  );
-}

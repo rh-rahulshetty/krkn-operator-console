@@ -249,13 +249,9 @@ export function CreateRun({ existingNames, onStart, onCancel }: CreateRunProps) 
       completedGenerations: 0,
       scenarios: [],
       progression: [],
-      orchestrator: {
+      mainPod: {
         status: 'Pending',
-        logLines: ['Illustrative mock orchestration request queued; no Kubernetes resources were created.'],
-      },
-      uploader: {
-        status: 'Not started',
-        logLines: ['Mock results uploader has not started.'],
+        logLines: ['Illustrative mock run request queued; no Kubernetes resources were created.'],
       },
     });
   };

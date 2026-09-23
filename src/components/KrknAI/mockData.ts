@@ -1,3 +1,4 @@
+import { buildMockConfigYaml, createDefaultConfigDraft } from './configModel';
 import type { MockAiFitnessPoint, MockAiRun, MockAiScenario, MockAiTarget } from './types';
 
 const clusterNames = {
@@ -167,6 +168,11 @@ const scenarios: MockAiScenario[] = rawScenarios.map(([scenarioId, generation, s
     logLines: failed
       ? ['Illustrative failed mock scenario; raw pod output is intentionally omitted.', 'Mock return code: 1.']
       : ['Illustrative mock scenario pod completed.', `Mock fitness score: ${fitnessScore}.`],
+    arguments: [
+      '--scenario',
+      scenarioType,
+      ...Object.entries(parameters).flatMap(([name, value]) => [`--${name}`, value]),
+    ],
     parameters,
     parentIds: parentScenarioIds.map((id) => scenarioUuids[id]),
     origin,
@@ -193,12 +199,15 @@ const mockLogs = (message: string) => [
   message,
 ];
 
+const configYamlFor = (target: MockAiTarget) => buildMockConfigYaml(target, createDefaultConfigDraft(target));
+
 const completedRun: MockAiRun = {
   name: 'robot-shop-exploration',
   runId: '90715e34-b0ff-40cd-b96f-9b6cdd59a033',
   cluster: eastTarget.cluster,
   targetRequestId: eastTarget.targetRequestId,
   configId: 'mock-config-robot-shop-exploration',
+  configYaml: configYamlFor(eastTarget),
   phase: 'Succeeded',
   createdAt: '2026-08-18T13:15:30.549208+00:00',
   generations: 6,
@@ -207,12 +216,11 @@ const completedRun: MockAiRun = {
   scenarios,
   progression,
   baselineFitness: 7.3001,
-  orchestrator: {
+  mainPod: {
     podName: 'mock-krkn-ai-orchestrator-robot-shop-exploration',
     status: 'Succeeded',
     logLines: mockLogs('Mock sample fixture reports six completed generations.'),
   },
-  uploader: { status: 'Complete', logLines: mockLogs('Mock result upload status: complete.') },
 };
 
 const runningScenarios = scenarios.filter((scenario) => scenario.generation < 2);
@@ -223,6 +231,7 @@ const runningRun: MockAiRun = {
   cluster: eastTarget.cluster,
   targetRequestId: eastTarget.targetRequestId,
   configId: 'mock-config-staging-preview-in-progress',
+  configYaml: configYamlFor(eastTarget),
   phase: 'Running',
   createdAt: '2026-09-23T09:20:00Z',
   generations: 6,
@@ -230,12 +239,11 @@ const runningRun: MockAiRun = {
   completedGenerations: 2,
   scenarios: runningScenarios,
   progression: progression.slice(0, 2),
-  orchestrator: {
+  mainPod: {
     podName: 'mock-krkn-ai-orchestrator-staging-preview-in-progress',
     status: 'Running',
     logLines: mockLogs('Fixed mock snapshot: two generations are complete.'),
   },
-  uploader: { status: 'Pending', logLines: mockLogs('Mock uploader is waiting for the run to finish.') },
   snapshotLabel: 'Fixed mock snapshot — no polling',
 };
 
@@ -245,6 +253,7 @@ const failedRun: MockAiRun = {
   cluster: westTarget.cluster,
   targetRequestId: westTarget.targetRequestId,
   configId: 'mock-config-failed-preview',
+  configYaml: configYamlFor(westTarget),
   phase: 'Failed',
   createdAt: '2026-09-23T08:10:00Z',
   generations: 6,
@@ -252,12 +261,11 @@ const failedRun: MockAiRun = {
   completedGenerations: null,
   scenarios: [],
   progression: [],
-  orchestrator: {
+  mainPod: {
     podName: 'mock-krkn-ai-orchestrator-failed-preview',
     status: 'Failed',
-    logLines: mockLogs('Illustrative orchestrator pod exited non-zero.'),
+    logLines: mockLogs('Illustrative main pod exited non-zero.'),
   },
-  uploader: { status: 'Unavailable', logLines: mockLogs('No result artifacts were produced in this failed mock run.') },
   failureReason: 'Illustrative orchestrator pod exited non-zero',
 };
 

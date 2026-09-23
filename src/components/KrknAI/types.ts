@@ -2,8 +2,7 @@ import type { SelectedCluster } from '../../types/api';
 
 export type MockAiRunPhase = 'Pending' | 'Provisioning' | 'Running' | 'Succeeded' | 'Failed' | 'Cancelled';
 export type MockAiScenarioOutcome = 'Succeeded' | 'Failed';
-export type MockAiOrchestratorStatus = 'Pending' | 'Running' | 'Succeeded' | 'Failed' | 'Not created';
-export type MockAiUploaderStatus = 'Complete' | 'Pending' | 'Not started' | 'Unavailable';
+export type MockAiMainPodStatus = 'Pending' | 'Running' | 'Succeeded' | 'Failed' | 'Not created';
 
 export type MockAiScenarioParameter =
   | 'namespace'
@@ -66,6 +65,8 @@ export interface MockAiScenario {
   podName: string;
   logLines: string[];
   parameters: Partial<Record<MockAiScenarioParameter, string>>;
+  /** Allowlisted arguments only; the executable and environment are intentionally omitted. */
+  arguments: string[];
   parentIds: string[];
   origin: string;
   healthCheckFailureScore?: number;
@@ -98,13 +99,9 @@ export interface MockAiRun {
   scenarios: MockAiScenario[];
   progression: MockAiFitnessPoint[];
   baselineFitness?: number;
-  orchestrator: {
+  mainPod: {
     podName?: string;
-    status: MockAiOrchestratorStatus;
-    logLines: string[];
-  };
-  uploader: {
-    status: MockAiUploaderStatus;
+    status: MockAiMainPodStatus;
     logLines: string[];
   };
   failureReason?: string;
