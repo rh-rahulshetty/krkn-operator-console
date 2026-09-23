@@ -218,7 +218,7 @@ describe('Krkn AI mock run creation', () => {
     expect(preview).toContain('"kubernetes.io/hostname"');
   }, 15_000);
 
-  it('uses enabled component checkboxes and cascades namespace disable flags', async () => {
+  it('cascades namespace enable changes to all descendants', async () => {
     const user = userEvent.setup();
     renderCreateRun();
     await user.type(screen.getByRole('textbox', { name: /Run name/ }), 'component-flags');
@@ -240,13 +240,14 @@ describe('Krkn AI mock run creation', () => {
     await user.click(screen.getByRole('checkbox', { name: 'Enable namespace robot-shop' }));
     const podToggle = screen.getByRole('checkbox', { name: 'Enable pod cart-1' });
     expect(podToggle).toBeEnabled();
-    expect(podToggle).not.toBeChecked();
-    await user.click(podToggle);
+    expect(podToggle).toBeChecked();
+    expect(screen.getByRole('checkbox', { name: 'Enable container cart in cart-1' })).toBeChecked();
     await user.click(screen.getByRole('checkbox', { name: 'Enable node worker-1' }));
     preview = (screen.getByLabelText('Generated krkn-ai.yaml preview') as HTMLTextAreaElement).value;
+    expect((preview.match(/disabled: true/g) ?? [])).toHaveLength(1);
     expect(preview).toMatch(/name: "robot-shop"\s+disabled: false/);
     expect(preview).toMatch(/name: "cart-1"\s+disabled: false/);
-    expect(preview).toMatch(/containers:\s+- name: "cart"\s+disabled: true/);
+    expect(preview).toMatch(/containers:\s+- name: "cart"\s+disabled: false/);
     expect(preview).toMatch(/name: "worker-1"\s+disabled: true/);
   }, 15_000);
 });

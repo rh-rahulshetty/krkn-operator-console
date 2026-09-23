@@ -27,17 +27,16 @@ function withDisabledFlag(components: MockAiClusterComponents, location: Compone
     namespaces: components.namespaces.map((namespace, namespaceIndex) => {
       if (namespaceIndex !== location.namespaceIndex) return namespace;
       if (location.kind === 'namespace') {
-        if (!disabled) return { ...namespace, disabled: false };
         return {
           ...namespace,
-          disabled: true,
+          disabled,
           pods: namespace.pods.map((pod) => ({
             ...pod,
-            disabled: true,
-            containers: pod.containers.map((container) => ({ ...container, disabled: true })),
+            disabled,
+            containers: pod.containers.map((container) => ({ ...container, disabled })),
           })),
-          services: namespace.services.map((service) => ({ ...service, disabled: true })),
-          pvcs: namespace.pvcs.map((pvc) => ({ ...pvc, disabled: true })),
+          services: namespace.services.map((service) => ({ ...service, disabled })),
+          pvcs: namespace.pvcs.map((pvc) => ({ ...pvc, disabled })),
         };
       }
       if (location.kind === 'pod') {
@@ -47,7 +46,7 @@ function withDisabledFlag(components: MockAiClusterComponents, location: Compone
             ? {
               ...pod,
               disabled,
-              ...(disabled ? { containers: pod.containers.map((container) => ({ ...container, disabled: true })) } : {}),
+              containers: pod.containers.map((container) => ({ ...container, disabled })),
             }
             : pod),
         };
