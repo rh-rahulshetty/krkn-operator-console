@@ -16,17 +16,41 @@ export type MockAiScenarioParameter =
   | 'write-iops'
   | 'fill-percentage';
 
+export interface MockAiDisabledComponent {
+  name: string;
+  disabled: boolean;
+  labels?: Record<string, string>;
+}
+
+export interface MockAiPodComponent extends MockAiDisabledComponent {
+  labels: Record<string, string>;
+  containers: MockAiDisabledComponent[];
+}
+
+export interface MockAiNamespaceComponent extends MockAiDisabledComponent {
+  pods: MockAiPodComponent[];
+  services: MockAiDisabledComponent[];
+  pvcs: MockAiDisabledComponent[];
+}
+
 export interface MockAiClusterComponents {
-  namespaces: string[];
-  pods: string[];
-  services: string[];
-  nodes: string[];
+  namespaces: MockAiNamespaceComponent[];
+  nodes: MockAiDisabledComponent[];
+}
+
+export interface MockAiHealthCheck {
+  name: string;
+  url: string;
+  statusCode: number;
+  timeoutSeconds: number;
+  intervalSeconds: number;
 }
 
 export interface MockAiTarget {
   cluster: SelectedCluster;
   targetRequestId: string;
   components: MockAiClusterComponents;
+  healthChecks: MockAiHealthCheck[];
   recommendations: string[];
   warnings: string[];
 }

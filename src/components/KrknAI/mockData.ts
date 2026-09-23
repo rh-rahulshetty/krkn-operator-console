@@ -10,21 +10,73 @@ export const mockAiTargets: MockAiTarget[] = [
   {
     cluster: { operatorName: 'krkn-operator', clusterName: clusterNames.east, clusterApiUrl: 'https://api.staging-east.example.com:6443' },
     targetRequestId: `mock-ai-target-${clusterNames.east}`,
-    components: { namespaces: ['robot-shop'], pods: ['cart-1', 'payment-1', 'redis-0', 'dispatch-1'], services: ['cart', 'payment', 'redis', 'dispatch'], nodes: ['worker-1', 'worker-2'] },
+    components: {
+      namespaces: [{
+        name: 'robot-shop',
+        disabled: false,
+        pods: [
+          { name: 'cart-1', disabled: false, labels: { service: 'cart' }, containers: [{ name: 'cart', disabled: false }] },
+          { name: 'payment-1', disabled: false, labels: { service: 'payment' }, containers: [{ name: 'payment', disabled: false }] },
+          { name: 'redis-0', disabled: false, labels: { service: 'redis' }, containers: [{ name: 'redis', disabled: false }] },
+          { name: 'dispatch-1', disabled: false, labels: { service: 'dispatch' }, containers: [{ name: 'dispatch', disabled: false }] },
+        ],
+        services: [
+          { name: 'cart', disabled: false },
+          { name: 'payment', disabled: false },
+          { name: 'redis', disabled: false },
+          { name: 'dispatch', disabled: false },
+        ],
+        pvcs: [{ name: 'data-redis-0', disabled: false }],
+      }],
+      nodes: [
+        { name: 'worker-1', disabled: false, labels: { 'kubernetes.io/hostname': 'worker-1', 'node-role.kubernetes.io/worker': '' } },
+        { name: 'worker-2', disabled: false, labels: { 'kubernetes.io/hostname': 'worker-2', 'node-role.kubernetes.io/worker': '' } },
+      ],
+    },
+    healthChecks: [{ name: 'robot-shop', url: 'https://robot-shop-health.staging-east.example.com/healthz', statusCode: 200, timeoutSeconds: 4, intervalSeconds: 2 }],
     recommendations: ['Storage and network scenario families are available in this mock discovery.'],
     warnings: [],
   },
   {
     cluster: { operatorName: 'krkn-operator', clusterName: clusterNames.west, clusterApiUrl: 'https://api.staging-west.example.com:6443' },
     targetRequestId: `mock-ai-target-${clusterNames.west}`,
-    components: { namespaces: ['shop-staging'], pods: ['cart-1', 'payment-1'], services: ['cart', 'payment'], nodes: ['worker-1'] },
+    components: {
+      namespaces: [{
+        name: 'shop-staging',
+        disabled: false,
+        pods: [
+          { name: 'cart-1', disabled: false, labels: { service: 'cart' }, containers: [{ name: 'cart', disabled: false }] },
+          { name: 'payment-1', disabled: false, labels: { service: 'payment' }, containers: [{ name: 'payment', disabled: false }] },
+        ],
+        services: [{ name: 'cart', disabled: false }, { name: 'payment', disabled: false }],
+        pvcs: [],
+      }],
+      nodes: [{ name: 'worker-1', disabled: false, labels: { 'kubernetes.io/hostname': 'worker-1', 'node-role.kubernetes.io/worker': '' } }],
+    },
+    healthChecks: [{ name: 'shop-staging', url: 'https://shop-staging-health.staging-west.example.com/healthz', statusCode: 200, timeoutSeconds: 4, intervalSeconds: 2 }],
     recommendations: ['Pod and container scenario families are available in this mock discovery.'],
     warnings: [],
   },
   {
     cluster: { operatorName: 'krkn-operator', clusterName: clusterNames.prod, clusterApiUrl: 'https://api.prod.example.com:6443' },
     targetRequestId: `mock-ai-target-${clusterNames.prod}`,
-    components: { namespaces: ['payments'], pods: ['checkout-1', 'ledger-1'], services: ['checkout', 'ledger'], nodes: ['worker-1', 'worker-2'] },
+    components: {
+      namespaces: [{
+        name: 'payments',
+        disabled: false,
+        pods: [
+          { name: 'checkout-1', disabled: false, labels: { service: 'checkout' }, containers: [{ name: 'checkout', disabled: false }] },
+          { name: 'ledger-1', disabled: false, labels: { service: 'ledger' }, containers: [{ name: 'ledger', disabled: false }] },
+        ],
+        services: [{ name: 'checkout', disabled: false }, { name: 'ledger', disabled: false }],
+        pvcs: [],
+      }],
+      nodes: [
+        { name: 'worker-1', disabled: false, labels: { 'kubernetes.io/hostname': 'worker-1', 'node-role.kubernetes.io/worker': '' } },
+        { name: 'worker-2', disabled: false, labels: { 'kubernetes.io/hostname': 'worker-2', 'node-role.kubernetes.io/worker': '' } },
+      ],
+    },
+    healthChecks: [],
     recommendations: ['Review the health-check configuration before selecting a scenario family.'],
     warnings: ['No active health checks in this mock discovery'],
   },

@@ -13,17 +13,31 @@ import {
   Title,
 } from '@patternfly/react-core';
 import { mockAiTargets } from './mockData';
-import type { MockAiRun, MockAiTarget } from './types';
-
-const scenarioTypeOptions = [
-  { id: 'storage-throttle', label: 'Storage throttle', configKey: 'storage_throttle' },
-  { id: 'dns-outage', label: 'DNS outage', configKey: 'dns_outage' },
-  { id: 'container-scenarios', label: 'Container scenarios', configKey: 'container_scenarios' },
-  { id: 'pvc-scenarios', label: 'PVC scenarios', configKey: 'pvc_scenarios' },
-] as const;
-
-type ScenarioType = (typeof scenarioTypeOptions)[number]['id'];
-type ScenarioFlags = Record<ScenarioType, boolean>;
+import { FitnessFunctionEditor } from './FitnessFunctionEditor';
+import { HealthChecksEditor } from './HealthChecksEditor';
+import { DiscoveryOptionsEditor } from './DiscoveryOptionsEditor';
+import { ClusterComponentsEditor } from './ClusterComponentsEditor';
+import {
+  buildMockConfigYaml,
+  copyClusterComponents,
+  createDefaultConfigDraft,
+  scenarioTypeOptions,
+  validateConfigDraft,
+} from './configModel';
+import {
+  defaultMockDiscoveryOptions,
+  discoverMockComponents,
+  preserveDisabledComponentFlags,
+  validateMockDiscoveryOptions,
+} from './discoveryOptions';
+import type { MockDiscoveryOptions } from './discoveryOptions';
+import type {
+  ConfigValidationErrors,
+  EditableConfigDraft,
+  GeneticSettingsDraft,
+  ScenarioType,
+} from './configModel';
+import type { MockAiRun } from './types';
 
 interface MockConfig {
   id: string;
@@ -33,6 +47,9 @@ interface MockConfig {
   generations: number;
   populationSize: number;
   scenarioTypes: ScenarioType[];
+  fitnessItemCount: number;
+  healthCheckCount: number;
+  discoveryOptions: MockDiscoveryOptions;
 }
 
 interface CreateRunProps {
@@ -41,69 +58,77 @@ interface CreateRunProps {
   onCancel: () => void;
 }
 
-function buildConfigYaml(target: MockAiTarget, generations: number, populationSize: number, enabledTypes: ScenarioFlags): string {
-  const lines = [
-    '# Mock preview configuration; no cluster endpoint or credentials are included.',
-    'kubeconfig_file_path: /input/kubeconfig',
-    'baseline:',
-    '  enable: true',
-    '  duration: 30',
-    'scenario:',
-  ];
+interface ConfigTextFieldProps {
+  id: string;
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+  error?: string;
+  helperText?: string;
+}
 
-  for (const option of scenarioTypeOptions) {
-    lines.push(`  ${option.configKey}:`, `    enable: ${enabledTypes[option.id]}`);
-  }
-
-  lines.push(
-    'algorithm: genetic',
-    'genetic:',
-    `  generations: ${generations}`,
-    `  population_size: ${populationSize}`,
-    'fitness_function:',
-    '  query: sum(kube_pod_container_status_restarts_total)',
-    '  type: point',
-    '  include_krkn_failure: true',
-    '  include_health_check_failure: true',
-    '  include_health_check_response_time: true',
-    'output:',
-    '  result_name_fmt: scenario_%s.yaml',
-    '  graph_name_fmt: scenario_%s.png',
-    '  log_name_fmt: scenario_%s.log',
-    'cluster_components:',
-    '  namespaces:',
+function ConfigTextField({ id, label, value, onChange, error, helperText }: ConfigTextFieldProps) {
+  return (
+    <FormGroup label={label} fieldId={id} isRequired>
+      <TextInput
+        id={id}
+        value={value}
+        onChange={(_event, nextValue) => onChange(nextValue)}
+        validated={error ? 'error' : 'default'}
+        aria-invalid={!!error}
+        aria-describedby={error ? `${id}-error` : undefined}
+      />
+      {error && <p id={`${id}-error`} className="krkn-ai-field-error" role="alert">{error}</p>}
+      {!error && helperText && <p className="krkn-ai-muted">{helperText}</p>}
+    </FormGroup>
   );
+}
 
-  for (const namespace of target.components.namespaces) {
-    lines.push(`    - name: ${namespace}`, '      pods:');
-    for (const pod of target.components.pods) {
-      lines.push(`        - name: ${pod}`);
-    }
-    lines.push('      services:');
-    for (const service of target.components.services) {
-      lines.push(`        - name: ${service}`);
-    }
-  }
+interface ConfigNumberFieldProps {
+  id: string;
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+  error?: string;
+  min?: number;
+  max?: number;
+  step?: number | string;
+  optional?: boolean;
+}
 
-  lines.push('  nodes:');
-  for (const node of target.components.nodes) {
-    lines.push(`    - name: ${node}`);
-  }
-  return lines.join('\n');
+function ConfigNumberField({ id, label, value, onChange, error, min, max, step, optional = false }: ConfigNumberFieldProps) {
+  return (
+    <FormGroup label={label} fieldId={id} isRequired={!optional}>
+      <TextInput
+        id={id}
+        type="number"
+        min={min}
+        max={max}
+        step={step}
+        value={value}
+        onChange={(_event, nextValue) => onChange(nextValue)}
+        validated={error ? 'error' : 'default'}
+        aria-invalid={!!error}
+        aria-describedby={error ? `${id}-error` : undefined}
+      />
+      {error && <p id={`${id}-error`} className="krkn-ai-field-error" role="alert">{error}</p>}
+      {!error && optional && <p className="krkn-ai-muted">Leave blank for null.</p>}
+    </FormGroup>
+  );
+}
+
+function errorFor(errors: ConfigValidationErrors, field: string): string | undefined {
+  return errors[field];
 }
 
 export function CreateRun({ existingNames, onStart, onCancel }: CreateRunProps) {
+  const firstTarget = mockAiTargets[0];
   const [step, setStep] = useState<1 | 2 | 3>(1);
   const [runName, setRunName] = useState('');
-  const [selectedTargetRequestId, setSelectedTargetRequestId] = useState(mockAiTargets[0].targetRequestId);
-  const [generations, setGenerations] = useState('6');
-  const [populationSize, setPopulationSize] = useState('4');
-  const [scenarioFlags, setScenarioFlags] = useState<ScenarioFlags>({
-    'storage-throttle': true,
-    'dns-outage': true,
-    'container-scenarios': true,
-    'pvc-scenarios': true,
-  });
+  const [selectedTargetRequestId, setSelectedTargetRequestId] = useState(firstTarget.targetRequestId);
+  const [draft, setDraft] = useState<EditableConfigDraft>(() => createDefaultConfigDraft(firstTarget));
+  const [discoveryOptions, setDiscoveryOptions] = useState<MockDiscoveryOptions>(defaultMockDiscoveryOptions);
+  const [discoveryWarnings, setDiscoveryWarnings] = useState<string[]>([]);
   const [createdConfig, setCreatedConfig] = useState<MockConfig | null>(null);
 
   const selectedTarget = mockAiTargets.find((target) => target.targetRequestId === selectedTargetRequestId);
@@ -115,30 +140,84 @@ export function CreateRun({ existingNames, onStart, onCancel }: CreateRunProps) 
       : existingNames.some((name) => name.toLowerCase() === trimmedName.toLowerCase())
         ? 'A run with this name already exists.'
         : undefined;
-  const generationCount = Number(generations);
-  const populationCount = Number(populationSize);
-  const generationError = !Number.isInteger(generationCount) || generationCount < 1 ? 'Enter a whole number of at least 1.' : undefined;
-  const populationError = !Number.isInteger(populationCount) || populationCount < 1 ? 'Enter a whole number of at least 1.' : undefined;
-  const enabledTypes = scenarioTypeOptions.filter((option) => scenarioFlags[option.id]).map((option) => option.id);
-  const scenarioError = enabledTypes.length === 0 ? 'Enable at least one scenario type.' : undefined;
-  const canDiscover = !nameError && !!selectedTarget;
-  const canCreateConfig = !!selectedTarget && !nameError && !generationError && !populationError && !scenarioError;
+  const discoveryOptionErrors = validateMockDiscoveryOptions(discoveryOptions);
+  const discoveryComponentError = draft.clusterComponents.namespaces.length === 0
+    ? `No mock namespaces matched pattern "${discoveryOptions.namespacePattern}". Update the pattern and discover again.`
+    : undefined;
+  const configErrors = validateConfigDraft(draft);
+  const generationCount = Number(draft.genetic.generations);
+  const populationCount = Number(draft.genetic.populationSize);
+  const enabledTypes = scenarioTypeOptions.filter((option) => draft.scenarioFlags[option.id]).map((option) => option.id);
+  const canDiscover = !nameError && !!selectedTarget && Object.keys(discoveryOptionErrors).length === 0;
+  const canCreateConfig = !!selectedTarget && !nameError && !discoveryComponentError && Object.keys(configErrors).length === 0;
   const canStart = !!createdConfig
     && !!selectedTarget
     && !nameError
-    && !generationError
-    && !populationError
-    && !scenarioError
+    && Object.keys(configErrors).length === 0
+    && !discoveryComponentError
     && createdConfig.targetRequestId === selectedTarget.targetRequestId
     && createdConfig.clusterName === selectedTarget.cluster.clusterName
     && createdConfig.id === `mock-config-${trimmedName}`;
-  const configPreview = selectedTarget && !generationError && !populationError
-    ? buildConfigYaml(selectedTarget, generationCount, populationCount, scenarioFlags)
-    : '';
+  const configPreview = selectedTarget ? buildMockConfigYaml(selectedTarget, draft) : '';
+
+  const updateDraft = (updates: Partial<EditableConfigDraft>) => {
+    setDraft((current) => ({ ...current, ...updates }));
+    setCreatedConfig(null);
+  };
+
+  const updateGenetic = (field: keyof GeneticSettingsDraft, value: string | boolean) => {
+    updateDraft({ genetic: { ...draft.genetic, [field]: value } as GeneticSettingsDraft });
+  };
+
+  const updateDiscoveryOption = (field: keyof MockDiscoveryOptions, value: string) => {
+    setDiscoveryOptions((current) => ({ ...current, [field]: value }));
+    setDiscoveryWarnings([]);
+    setCreatedConfig(null);
+  };
+
+  const handleDiscover = () => {
+    if (!canDiscover || !selectedTarget) return;
+    const result = discoverMockComponents(selectedTarget, discoveryOptions);
+    if (Object.keys(result.errors).length > 0) return;
+    setDraft((current) => ({
+      ...current,
+      clusterComponents: preserveDisabledComponentFlags(result.components, current.clusterComponents),
+    }));
+    setDiscoveryWarnings(result.warnings);
+    setStep(2);
+  };
+
+  const handleTargetChange = (targetRequestId: string) => {
+    const nextTarget = mockAiTargets.find((target) => target.targetRequestId === targetRequestId);
+    if (!nextTarget) return;
+    const oldNamespace = selectedTarget?.components.namespaces[0]?.name;
+    const nextNamespace = nextTarget.components.namespaces[0]?.name;
+    setSelectedTargetRequestId(targetRequestId);
+    setDraft((current) => ({
+      ...current,
+      clusterComponents: copyClusterComponents(nextTarget.components),
+      fitnessItems: oldNamespace && nextNamespace
+        ? current.fitnessItems.map((item) => ({
+          ...item,
+          query: item.query.split(`namespace="${oldNamespace}"`).join(`namespace="${nextNamespace}"`),
+        }))
+        : current.fitnessItems,
+      healthChecks: nextTarget.healthChecks.map((healthCheck, key) => ({
+        key,
+        name: healthCheck.name,
+        url: healthCheck.url,
+        statusCode: String(healthCheck.statusCode),
+        timeout: String(healthCheck.timeoutSeconds),
+        interval: String(healthCheck.intervalSeconds),
+      })),
+    }));
+    setCreatedConfig(null);
+    setDiscoveryWarnings([]);
+  };
 
   const handleCreateConfig = () => {
     if (!canCreateConfig || !selectedTarget) return;
-    const frozenYaml = buildConfigYaml(selectedTarget, generationCount, populationCount, scenarioFlags);
+    const frozenYaml = buildMockConfigYaml(selectedTarget, draft);
     setCreatedConfig({
       id: `mock-config-${trimmedName}`,
       targetRequestId: selectedTarget.targetRequestId,
@@ -147,6 +226,9 @@ export function CreateRun({ existingNames, onStart, onCancel }: CreateRunProps) 
       generations: generationCount,
       populationSize: populationCount,
       scenarioTypes: enabledTypes,
+      fitnessItemCount: draft.fitnessItems.length,
+      healthCheckCount: draft.healthChecks.length,
+      discoveryOptions: { ...discoveryOptions },
     });
     setStep(3);
   };
@@ -195,8 +277,9 @@ export function CreateRun({ existingNames, onStart, onCancel }: CreateRunProps) 
       </ol>
 
       {step === 1 && (
+        <>
         <Card>
-          <CardTitle>Target and run name</CardTitle>
+          <CardTitle>Run name and cluster</CardTitle>
           <CardBody>
             <FormGroup label="Run name" fieldId="krkn-ai-run-name" isRequired>
               <TextInput
@@ -216,10 +299,7 @@ export function CreateRun({ existingNames, onStart, onCancel }: CreateRunProps) 
               <FormSelect
                 id="krkn-ai-target"
                 value={selectedTargetRequestId}
-                onChange={(_event, value) => {
-                  setSelectedTargetRequestId(value);
-                  setCreatedConfig(null);
-                }}
+                onChange={(_event, value) => handleTargetChange(value)}
                 aria-label="Select one cluster"
               >
                 {mockAiTargets.map((target) => (
@@ -227,24 +307,36 @@ export function CreateRun({ existingNames, onStart, onCancel }: CreateRunProps) 
                 ))}
               </FormSelect>
             </FormGroup>
-            <div className="krkn-ai-actions">
-              <Button variant="primary" isDisabled={!canDiscover} onClick={() => setStep(2)}>Discover components</Button>
-            </div>
           </CardBody>
         </Card>
+        <DiscoveryOptionsEditor
+          options={discoveryOptions}
+          errors={discoveryOptionErrors}
+          onChange={updateDiscoveryOption}
+        />
+        <div className="krkn-ai-actions">
+          <Button variant="primary" isDisabled={!canDiscover} onClick={handleDiscover}>Discover components</Button>
+        </div>
+        </>
       )}
 
       {step === 2 && selectedTarget && (
         <>
           <Card>
-            <CardTitle>Simulated cluster discovery</CardTitle>
+            <CardTitle>Mock discovery result · cluster_components</CardTitle>
             <CardBody>
-              <p className="krkn-ai-muted">Illustrative components for <strong>{selectedTarget.cluster.clusterName}</strong>; no target API was called.</p>
+              <p className="krkn-ai-muted">Illustrative components for <strong>{selectedTarget.cluster.clusterName}</strong>; no target API was called. Filters scope the synthetic inventory. Names and labels stay fixed; disabled flags are editable below.</p>
               <dl className="krkn-ai-discovery-grid">
-                <div><dt>Namespaces</dt><dd>{selectedTarget.components.namespaces.join(', ')}</dd></div>
-                <div><dt>Pods</dt><dd>{selectedTarget.components.pods.join(', ')}</dd></div>
-                <div><dt>Services</dt><dd>{selectedTarget.components.services.join(', ')}</dd></div>
-                <div><dt>Nodes</dt><dd>{selectedTarget.components.nodes.join(', ')}</dd></div>
+                <div><dt>Namespace pattern</dt><dd>{discoveryOptions.namespacePattern}</dd></div>
+                <div><dt>Pod label-key pattern</dt><dd>{discoveryOptions.podLabelPattern}</dd></div>
+                <div><dt>Node label-key pattern</dt><dd>{discoveryOptions.nodeLabelPattern}</dd></div>
+                <div><dt>Skip pod name</dt><dd>{discoveryOptions.skipPodName || 'None'}</dd></div>
+                <div><dt>Namespaces</dt><dd>{draft.clusterComponents.namespaces.map((namespace) => namespace.name).join(', ') || 'None matched'}</dd></div>
+                <div><dt>Pods</dt><dd>{draft.clusterComponents.namespaces.flatMap((namespace) => namespace.pods.map((pod) => pod.name)).join(', ') || 'None discovered'}</dd></div>
+                <div><dt>Containers</dt><dd>{draft.clusterComponents.namespaces.flatMap((namespace) => namespace.pods.flatMap((pod) => pod.containers.map((container) => container.name))).join(', ') || 'None discovered'}</dd></div>
+                <div><dt>Services</dt><dd>{draft.clusterComponents.namespaces.flatMap((namespace) => namespace.services.map((service) => service.name)).join(', ') || 'None discovered'}</dd></div>
+                <div><dt>PVCs</dt><dd>{draft.clusterComponents.namespaces.flatMap((namespace) => namespace.pvcs.map((pvc) => pvc.name)).join(', ') || 'None discovered'}</dd></div>
+                <div><dt>Nodes</dt><dd>{draft.clusterComponents.nodes.map((node) => node.name).join(', ') || 'None discovered'}</dd></div>
               </dl>
               {selectedTarget.recommendations.map((recommendation) => (
                 <Alert key={recommendation} variant="success" title="Recommendation" isInline>{recommendation}</Alert>
@@ -252,72 +344,202 @@ export function CreateRun({ existingNames, onStart, onCancel }: CreateRunProps) 
               {selectedTarget.warnings.map((warning) => (
                 <Alert key={warning} variant="warning" title="Discovery warning" isInline>{warning}</Alert>
               ))}
+              {discoveryWarnings.map((warning) => (
+                <Alert key={warning} variant="warning" title="Discovery filter warning" isInline>{warning}</Alert>
+              ))}
             </CardBody>
           </Card>
 
           <Card>
-            <CardTitle>Genetic search configuration</CardTitle>
+            <CardTitle>Cluster components · disabled flags</CardTitle>
             <CardBody>
-              <div className="krkn-ai-number-fields">
-                <FormGroup label="Generations" fieldId="krkn-ai-generations" isRequired>
-                  <TextInput
-                    id="krkn-ai-generations"
-                    type="number"
-                    min={1}
-                    step={1}
-                    value={generations}
-                    onChange={(_event, value) => {
-                      setGenerations(value);
-                      setCreatedConfig(null);
-                    }}
-                    validated={generationError ? 'error' : 'default'}
-                    aria-invalid={!!generationError}
-                    aria-describedby="krkn-ai-generations-error"
-                  />
-                  {generationError && <p id="krkn-ai-generations-error" className="krkn-ai-field-error" role="alert">{generationError}</p>}
+              <p className="krkn-ai-muted">Toggle discovered mock namespaces, pods, containers, services, PVCs, and nodes. Each choice updates its YAML <code>disabled</code> flag; no component is queried or created.</p>
+              <ClusterComponentsEditor
+                components={draft.clusterComponents}
+                onChange={(components) => updateDraft({ clusterComponents: components })}
+              />
+            </CardBody>
+          </Card>
+
+          <Card>
+            <CardTitle>Run settings</CardTitle>
+            <CardBody>
+              <p className="krkn-ai-muted">The kubeconfig path is a fixed placeholder and is never opened or uploaded.</p>
+              <div className="krkn-ai-config-fields">
+                <FormGroup label="Kubeconfig file path" fieldId="krkn-ai-kubeconfig-path">
+                  <TextInput id="krkn-ai-kubeconfig-path" value="/input/kubeconfig" readOnly isDisabled />
                 </FormGroup>
-                <FormGroup label="Population size" fieldId="krkn-ai-population" isRequired>
-                  <TextInput
-                    id="krkn-ai-population"
-                    type="number"
-                    min={1}
-                    step={1}
-                    value={populationSize}
-                    onChange={(_event, value) => {
-                      setPopulationSize(value);
-                      setCreatedConfig(null);
-                    }}
-                    validated={populationError ? 'error' : 'default'}
-                    aria-invalid={!!populationError}
-                    aria-describedby="krkn-ai-population-error"
-                  />
-                  {populationError && <p id="krkn-ai-population-error" className="krkn-ai-field-error" role="alert">{populationError}</p>}
-                </FormGroup>
+                <ConfigNumberField
+                  id="krkn-ai-seed"
+                  label="Seed"
+                  value={draft.seed}
+                  onChange={(value) => updateDraft({ seed: value })}
+                  error={errorFor(configErrors, 'seed')}
+                  step={1}
+                  optional
+                />
+                <ConfigNumberField
+                  id="krkn-ai-wait-duration"
+                  label="Wait duration (seconds)"
+                  value={draft.waitDuration}
+                  onChange={(value) => updateDraft({ waitDuration: value })}
+                  error={errorFor(configErrors, 'waitDuration')}
+                  min={0}
+                  step="any"
+                />
               </div>
+            </CardBody>
+          </Card>
+
+          <Card>
+            <CardTitle>Baseline</CardTitle>
+            <CardBody>
+              <Checkbox
+                id="krkn-ai-baseline-enabled"
+                label="Enable baseline run"
+                isChecked={draft.baselineEnabled}
+                onChange={(_event, checked) => updateDraft({ baselineEnabled: checked })}
+              />
+              <div className="krkn-ai-config-fields">
+                <ConfigNumberField
+                  id="krkn-ai-baseline-duration"
+                  label="Duration (seconds)"
+                  value={draft.baselineDuration}
+                  onChange={(value) => updateDraft({ baselineDuration: value })}
+                  error={errorFor(configErrors, 'baselineDuration')}
+                  min={0}
+                  step="any"
+                />
+              </div>
+            </CardBody>
+          </Card>
+
+          <Card>
+            <CardTitle>Scenario families</CardTitle>
+            <CardBody>
               <fieldset className="krkn-ai-scenario-options" aria-describedby="krkn-ai-scenario-error">
-                <legend>Recommended scenario types</legend>
+                <legend>Recommended safe scenario types</legend>
                 {scenarioTypeOptions.map((option) => (
                   <Checkbox
                     key={option.id}
                     id={`krkn-ai-scenario-${option.id}`}
                     label={option.label}
-                    isChecked={scenarioFlags[option.id]}
-                    onChange={(_event, checked) => {
-                      setScenarioFlags((current) => ({ ...current, [option.id]: checked }));
-                      setCreatedConfig(null);
-                    }}
+                    isChecked={draft.scenarioFlags[option.id]}
+                    onChange={(_event, checked) => updateDraft({ scenarioFlags: { ...draft.scenarioFlags, [option.id]: checked } })}
                   />
                 ))}
-                {scenarioError && <p id="krkn-ai-scenario-error" className="krkn-ai-field-error" role="alert">{scenarioError}</p>}
+                {configErrors.scenarioFlags && <p id="krkn-ai-scenario-error" className="krkn-ai-field-error" role="alert">{configErrors.scenarioFlags}</p>}
               </fieldset>
+            </CardBody>
+          </Card>
+
+          <Card>
+            <CardTitle>Algorithm · genetic</CardTitle>
+            <CardBody>
+              <div className="krkn-ai-config-fields">
+                <ConfigTextField
+                  id="krkn-ai-algorithm"
+                  label="Algorithm"
+                  value={draft.algorithm}
+                  onChange={(value) => updateDraft({ algorithm: value })}
+                  error={errorFor(configErrors, 'algorithm')}
+                />
+                <ConfigNumberField
+                  id="krkn-ai-generations"
+                  label="Generations"
+                  value={draft.genetic.generations}
+                  onChange={(value) => updateGenetic('generations', value)}
+                  error={errorFor(configErrors, 'generations')}
+                  min={1}
+                  step={1}
+                />
+                <ConfigNumberField
+                  id="krkn-ai-population"
+                  label="Population size"
+                  value={draft.genetic.populationSize}
+                  onChange={(value) => updateGenetic('populationSize', value)}
+                  error={errorFor(configErrors, 'populationSize')}
+                  min={1}
+                  step={1}
+                />
+                <ConfigNumberField
+                  id="krkn-ai-genetic-duration"
+                  label="Genetic duration (seconds)"
+                  value={draft.genetic.duration}
+                  onChange={(value) => updateGenetic('duration', value)}
+                  error={errorFor(configErrors, 'genetic.duration')}
+                  min={0}
+                  step="any"
+                  optional
+                />
+                <ConfigNumberField id="krkn-ai-mutation-rate" label="Mutation rate" value={draft.genetic.mutationRate} onChange={(value) => updateGenetic('mutationRate', value)} error={errorFor(configErrors, 'genetic.mutationRate')} min={0} max={1} step="any" />
+                <ConfigNumberField id="krkn-ai-scenario-mutation-rate" label="Scenario mutation rate" value={draft.genetic.scenarioMutationRate} onChange={(value) => updateGenetic('scenarioMutationRate', value)} error={errorFor(configErrors, 'genetic.scenarioMutationRate')} min={0} max={1} step="any" />
+                <ConfigNumberField id="krkn-ai-crossover-rate" label="Crossover rate" value={draft.genetic.crossoverRate} onChange={(value) => updateGenetic('crossoverRate', value)} error={errorFor(configErrors, 'genetic.crossoverRate')} min={0} max={1} step="any" />
+                <ConfigNumberField id="krkn-ai-composition-rate" label="Composition rate" value={draft.genetic.compositionRate} onChange={(value) => updateGenetic('compositionRate', value)} error={errorFor(configErrors, 'genetic.compositionRate')} min={0} max={1} step="any" />
+                <ConfigTextField id="krkn-ai-selection-strategy" label="Selection strategy" value={draft.genetic.selectionStrategy} onChange={(value) => updateGenetic('selectionStrategy', value)} error={errorFor(configErrors, 'genetic.selectionStrategy')} />
+                <ConfigNumberField id="krkn-ai-tournament-size" label="Tournament size" value={draft.genetic.tournamentSize} onChange={(value) => updateGenetic('tournamentSize', value)} error={errorFor(configErrors, 'genetic.tournamentSize')} min={1} step={1} />
+                <ConfigNumberField id="krkn-ai-population-injection-rate" label="Population injection rate" value={draft.genetic.populationInjectionRate} onChange={(value) => updateGenetic('populationInjectionRate', value)} error={errorFor(configErrors, 'genetic.populationInjectionRate')} min={0} max={1} step="any" />
+                <ConfigNumberField id="krkn-ai-population-injection-size" label="Population injection size" value={draft.genetic.populationInjectionSize} onChange={(value) => updateGenetic('populationInjectionSize', value)} error={errorFor(configErrors, 'genetic.populationInjectionSize')} min={0} step={1} />
+              </div>
+              <section className="krkn-ai-config-subsection" aria-labelledby="krkn-ai-adaptive-heading">
+                <h3 id="krkn-ai-adaptive-heading">Adaptive mutation</h3>
+                <Checkbox
+                  id="krkn-ai-adaptive-enabled"
+                  label="Enable adaptive mutation"
+                  isChecked={draft.genetic.adaptiveEnabled}
+                  onChange={(_event, checked) => updateGenetic('adaptiveEnabled', checked)}
+                />
+                <div className="krkn-ai-config-fields">
+                  <ConfigNumberField id="krkn-ai-adaptive-min" label="Minimum" value={draft.genetic.adaptiveMin} onChange={(value) => updateGenetic('adaptiveMin', value)} error={errorFor(configErrors, 'genetic.adaptiveMin')} min={0} max={1} step="any" />
+                  <ConfigNumberField id="krkn-ai-adaptive-max" label="Maximum" value={draft.genetic.adaptiveMax} onChange={(value) => updateGenetic('adaptiveMax', value)} error={errorFor(configErrors, 'genetic.adaptiveMax')} min={0} max={1} step="any" />
+                  <ConfigNumberField id="krkn-ai-adaptive-threshold" label="Threshold" value={draft.genetic.adaptiveThreshold} onChange={(value) => updateGenetic('adaptiveThreshold', value)} error={errorFor(configErrors, 'genetic.adaptiveThreshold')} min={0} max={1} step="any" />
+                  <ConfigNumberField id="krkn-ai-adaptive-generations" label="Adaptive mutation generations" value={draft.genetic.adaptiveGenerations} onChange={(value) => updateGenetic('adaptiveGenerations', value)} error={errorFor(configErrors, 'genetic.adaptiveGenerations')} min={1} step={1} />
+                </div>
+              </section>
+              <section className="krkn-ai-config-subsection" aria-labelledby="krkn-ai-stopping-heading">
+                <h3 id="krkn-ai-stopping-heading">Stopping criteria</h3>
+                <div className="krkn-ai-config-fields">
+                  <ConfigNumberField id="krkn-ai-fitness-threshold" label="Fitness threshold" value={draft.genetic.fitnessThreshold} onChange={(value) => updateGenetic('fitnessThreshold', value)} error={errorFor(configErrors, 'genetic.fitnessThreshold')} step="any" optional />
+                  <ConfigNumberField id="krkn-ai-generation-saturation" label="Generation saturation" value={draft.genetic.generationSaturation} onChange={(value) => updateGenetic('generationSaturation', value)} error={errorFor(configErrors, 'genetic.generationSaturation')} min={1} step={1} optional />
+                  <ConfigNumberField id="krkn-ai-exploration-saturation" label="Exploration saturation" value={draft.genetic.explorationSaturation} onChange={(value) => updateGenetic('explorationSaturation', value)} error={errorFor(configErrors, 'genetic.explorationSaturation')} step="any" optional />
+                  <ConfigNumberField id="krkn-ai-saturation-threshold" label="Saturation threshold" value={draft.genetic.saturationThreshold} onChange={(value) => updateGenetic('saturationThreshold', value)} error={errorFor(configErrors, 'genetic.saturationThreshold')} min={0} max={1} step="any" />
+                </div>
+              </section>
+            </CardBody>
+          </Card>
+
+          <Card>
+            <CardTitle>Health checks</CardTitle>
+            <CardBody>
+              <HealthChecksEditor draft={draft} errors={configErrors} onChange={updateDraft} />
+            </CardBody>
+          </Card>
+
+          <Card>
+            <CardTitle>Fitness function</CardTitle>
+            <CardBody>
+              <FitnessFunctionEditor draft={draft} errors={configErrors} onChange={updateDraft} />
+            </CardBody>
+          </Card>
+
+          <Card>
+            <CardTitle>Output formats</CardTitle>
+            <CardBody>
+              <p className="krkn-ai-muted">Each filename format must retain the <code>%s</code> scenario placeholder.</p>
+              <div className="krkn-ai-config-fields">
+                <ConfigTextField id="krkn-ai-result-name-format" label="result_name_fmt" value={draft.resultNameFormat} onChange={(value) => updateDraft({ resultNameFormat: value })} error={errorFor(configErrors, 'resultNameFormat')} />
+                <ConfigTextField id="krkn-ai-graph-name-format" label="graph_name_fmt" value={draft.graphNameFormat} onChange={(value) => updateDraft({ graphNameFormat: value })} error={errorFor(configErrors, 'graphNameFormat')} />
+                <ConfigTextField id="krkn-ai-log-name-format" label="log_name_fmt" value={draft.logNameFormat} onChange={(value) => updateDraft({ logNameFormat: value })} error={errorFor(configErrors, 'logNameFormat')} />
+              </div>
             </CardBody>
           </Card>
 
           <Card>
             <CardTitle>Generated krkn-ai.yaml preview</CardTitle>
             <CardBody>
-              <p className="krkn-ai-muted">Read-only deterministic preview. The example kubeconfig path is not a real credential, and target URLs are omitted.</p>
-              <textarea className="krkn-ai-yaml" aria-label="Generated krkn-ai.yaml preview" value={configPreview} readOnly rows={24} />
+              <p className="krkn-ai-muted">Read-only deterministic preview. Health-check URLs use reserved mock example.com hosts and are never requested. The kubeconfig path is a fixed placeholder; credentials, host parameters, headers, and live endpoints are omitted.</p>
+              <textarea className="krkn-ai-yaml" aria-label="Generated krkn-ai.yaml preview" value={configPreview} readOnly rows={32} />
+              {Object.keys(configErrors).length > 0 && <p className="krkn-ai-field-error" role="status">Fix the highlighted settings before creating this mock config.</p>}
             </CardBody>
           </Card>
           <div className="krkn-ai-actions krkn-ai-actions-between">
@@ -337,8 +559,14 @@ export function CreateRun({ existingNames, onStart, onCancel }: CreateRunProps) 
                 <div><dt>Cluster</dt><dd>{createdConfig.clusterName}</dd></div>
                 <div><dt>Mock config ID</dt><dd>{createdConfig.id}</dd></div>
                 <div><dt>Expected scenarios</dt><dd>{createdConfig.generations * createdConfig.populationSize}</dd></div>
+                <div><dt>Fitness items</dt><dd>{createdConfig.fitnessItemCount}</dd></div>
+                <div><dt>Health checks</dt><dd>{createdConfig.healthCheckCount}</dd></div>
+                <div><dt>Namespace pattern</dt><dd>{createdConfig.discoveryOptions.namespacePattern}</dd></div>
+                <div><dt>Pod label-key pattern</dt><dd>{createdConfig.discoveryOptions.podLabelPattern}</dd></div>
+                <div><dt>Node label-key pattern</dt><dd>{createdConfig.discoveryOptions.nodeLabelPattern}</dd></div>
+                <div><dt>Skip pod name</dt><dd>{createdConfig.discoveryOptions.skipPodName || 'None'}</dd></div>
               </dl>
-              <p className="krkn-ai-muted">This config is frozen in memory. Returning to edit its name, target, counts, or scenario selection requires creating the config again.</p>
+              <p className="krkn-ai-muted">This complete YAML config is frozen in memory. Returning to edit any setting requires creating the config again.</p>
               <pre className="krkn-ai-yaml" aria-label="Frozen mock configuration YAML">{createdConfig.yaml}</pre>
             </CardBody>
           </Card>

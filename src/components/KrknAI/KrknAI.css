@@ -565,3 +565,153 @@
 .krkn-ai-run-list__table-wrap {
   min-width: 0;
 }
+
+.krkn-ai-config-fields,
+.krkn-ai-genetic-grid,
+.krkn-ai-health-check-options,
+.krkn-ai-health-check-fields,
+.krkn-ai-fitness-item-editor,
+.krkn-ai-fitness-includes {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 16rem), 1fr));
+  gap: 1rem;
+  min-width: 0;
+}
+
+.krkn-ai-config-subsection {
+  margin-block-start: 1.5rem;
+  padding-block-start: 1rem;
+  border-block-start: 1px solid var(--krkn-ai-border);
+}
+
+.krkn-ai-config-subsection h3,
+.krkn-ai-fitness-items-heading h3 {
+  margin-block: 0 0.75rem;
+}
+
+.krkn-ai-fitness-items-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-block: 1.25rem 0.75rem;
+}
+
+.krkn-ai-fitness-items,
+.krkn-ai-health-check-list {
+  display: grid;
+  gap: 0.65rem;
+}
+
+.krkn-ai-fitness-item,
+.krkn-ai-health-check-item {
+  min-width: 0;
+  border: 1px solid var(--krkn-ai-border);
+  border-radius: 4px;
+  background: var(--krkn-ai-surface);
+}
+
+.krkn-ai-fitness-item summary,
+.krkn-ai-health-check-item summary {
+  padding: 0.85rem;
+  cursor: pointer;
+  overflow-wrap: anywhere;
+}
+
+.krkn-ai-fitness-item-editor,
+.krkn-ai-health-check-fields {
+  padding: 0.85rem;
+  border-block-start: 1px solid var(--krkn-ai-border);
+}
+
+.krkn-ai-fitness-query {
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 6rem;
+  padding: 0.65rem;
+  border: 1px solid var(--krkn-ai-border);
+  border-radius: 4px;
+  background: var(--krkn-ai-surface);
+  color: inherit;
+  font: 0.8125rem/1.5 var(--pf-v5-global--font-family--monospace, monospace);
+  resize: vertical;
+}
+
+.krkn-ai-fitness-includes {
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 13rem), 1fr));
+  margin: 1rem 0;
+  padding: 0;
+  border: 0;
+}
+
+.krkn-ai-fitness-includes legend {
+  margin-block-end: 0.75rem;
+  font-weight: 600;
+}
+
+@media (max-width: 768px) {
+  .krkn-ai-fitness-items-heading {
+    flex-direction: column;
+  }
+}
+
+.krkn-ai-component-editor {
+  display: grid;
+  gap: 1rem;
+  min-width: 0;
+}
+
+.krkn-ai-component-namespace {
+  min-width: 0;
+  border: 1px solid var(--krkn-ai-border);
+  border-radius: 4px;
+  background: var(--krkn-ai-surface);
+}
+
+.krkn-ai-component-namespace > summary {
+  padding: 0.8rem;
+  cursor: pointer;
+  overflow-wrap: anywhere;
+}
+
+.krkn-ai-component-namespace-content {
+  display: grid;
+  gap: 1rem;
+  padding: 0.85rem;
+  border-block-start: 1px solid var(--krkn-ai-border);
+}
+
+.krkn-ai-component-group {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 14rem), 1fr));
+  gap: 0.75rem;
+  min-width: 0;
+  padding: 0.85rem;
+  border: 1px solid var(--krkn-ai-border);
+  border-radius: 4px;
+}
+
+.krkn-ai-component-group legend {
+  padding-inline: 0.35rem;
+  font-weight: 600;
+}
+
+.krkn-ai-component-pod {
+  display: grid;
+  gap: 0.65rem;
+  min-width: 0;
+  padding: 0.75rem;
+  border: 1px solid var(--krkn-ai-border);
+  border-radius: 4px;
+}
+
+.krkn-ai-component-children {
+  display: grid;
+  gap: 0.65rem;
+  margin-inline-start: 1rem;
+  color: var(--krkn-ai-muted);
+}
+
+.krkn-ai-node-group {
+  margin: 0;
+}
