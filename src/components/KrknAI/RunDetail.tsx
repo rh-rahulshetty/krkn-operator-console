@@ -84,7 +84,7 @@ export function RunDetail({ run, onBack }: RunDetailProps) {
             title="Main pod output"
             logText={run.mainPod.logText}
             description={run.runId === '90715e34-b0ff-40cd-b96f-9b6cdd59a033'
-              ? 'Static copy of the supplied run.log with ANSI control codes removed — no live pod was queried.'
+              ? 'Static copy of the supplied run.log with ANSI formatting rendered — no live pod was queried.'
               : 'Illustrative static log fixture — no live pod was queried.'}
           />
         </CardBody>

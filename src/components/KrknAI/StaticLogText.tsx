@@ -1,14 +1,14 @@
 import { useMemo } from 'react';
-import Anser from 'anser';
+import { LogTerminal } from '../LogTerminal';
 
 interface StaticLogTextProps {
   logText: string;
 }
 
 export function StaticLogText({ logText }: StaticLogTextProps) {
-  const displayText = useMemo(() => Anser.ansiToText(logText), [logText]);
+  const logs = useMemo(() => logText ? [logText] : [], [logText]);
 
-  return displayText
-    ? <pre className="krkn-ai-log-panel__lines">{displayText}</pre>
+  return logs.length > 0
+    ? <LogTerminal logs={logs} ariaLabel="Log output" />
     : <p className="krkn-ai-not-available">Not available yet</p>;
 }

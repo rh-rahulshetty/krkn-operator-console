@@ -147,14 +147,11 @@
 }
 
 .krkn-ai-log-panel {
-  overflow-x: auto;
-  padding: 1rem;
+  padding: 1.25rem;
   border: 1px solid var(--krkn-ai-border);
-  border-radius: 4px;
+  border-radius: 8px;
   background: var(--krkn-ai-surface);
-  font: 0.8125rem/1.5 var(--pf-v5-global--font-family--monospace, monospace);
-  white-space: pre-wrap;
-  overflow-wrap: anywhere;
+  box-shadow: 0 1px 3px rgba(3, 3, 3, 0.12);
 }
 
 .krkn-ai-unknown-run .pf-v5-c-button {
@@ -271,12 +268,23 @@
 .krkn-ai-main-pod__metadata > div,
 .krkn-ai-scenario-detail__summary > div,
 .krkn-ai-scenario-detail__parameters > div,
-.krkn-ai-scenario-detail__metrics > div,
 .krkn-ai-scenario-detail__lineage > div {
   min-width: 0;
-  padding: 0.65rem;
+  padding: 0.75rem;
   border: 1px solid var(--krkn-ai-border);
-  border-radius: 4px;
+  border-radius: 6px;
+  background: var(--pf-v5-global--BackgroundColor--200, #f5f5f5);
+  overflow-wrap: anywhere;
+}
+
+.krkn-ai-scenario-detail__metrics > div {
+  min-width: 0;
+  padding: 0.9rem 1rem;
+  border: 1px solid var(--krkn-ai-border);
+  border-inline-start: 4px solid var(--pf-v5-global--primary-color--100, #0066cc);
+  border-radius: 6px;
+  background: var(--pf-v5-global--BackgroundColor--200, #f5f5f5);
+  box-shadow: 0 1px 2px rgba(3, 3, 3, 0.08);
   overflow-wrap: anywhere;
 }
 
@@ -331,22 +339,6 @@
   color: var(--krkn-ai-muted);
 }
 
-.krkn-ai-log-panel__lines {
-  overflow-x: auto;
-  padding: 1rem;
-  border: 1px solid var(--krkn-ai-border);
-  border-radius: 4px;
-  background: var(--krkn-ai-surface);
-  color: inherit;
-  font: 0.8125rem/1.5 var(--pf-v5-global--font-family--monospace, monospace);
-  white-space: pre-wrap;
-  overflow-wrap: anywhere;
-}
-
-.krkn-ai-log-panel > .krkn-ai-log-panel__lines {
-  max-height: 28rem;
-  overflow: auto;
-}
 
 .krkn-ai-scenario-explorer {
   min-width: 0;
@@ -475,19 +467,43 @@
   font-weight: 400;
 }
 
-.krkn-ai-scenario-detail__arguments {
-  margin-block-start: 1rem;
+.krkn-ai-scenario-detail__command {
+  margin-block-start: 1.25rem;
 }
 
-.krkn-ai-scenario-detail__arguments h4,
+.krkn-ai-scenario-detail__command h4,
 .krkn-ai-scenario-detail__section h3 {
   margin-block: 0 0.75rem;
 }
 
+.krkn-ai-scenario-command {
+  margin-block-start: 0.5rem;
+}
+
+.krkn-ai-scenario-command code {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.krkn-ai-scenario-detail__fitness-total {
+  padding: 0.75rem 1rem;
+  border-radius: 6px;
+  background: var(--pf-v5-global--BackgroundColor--200, #f5f5f5);
+}
+
+.krkn-ai-scenario-detail__metrics dd {
+  margin-block-start: 0.4rem;
+  font-size: 1.125rem;
+  font-weight: 600;
+}
+
 .krkn-ai-scenario-detail__section {
   margin-block: 1.5rem;
-  padding-block-start: 1rem;
-  border-block-start: 1px solid var(--krkn-ai-border);
+  padding: 1.25rem;
+  border: 1px solid var(--krkn-ai-border);
+  border-radius: 8px;
+  background: var(--krkn-ai-surface);
+  box-shadow: 0 1px 3px rgba(3, 3, 3, 0.1);
 }
 
 .krkn-ai-health-charts {

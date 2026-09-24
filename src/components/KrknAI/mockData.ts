@@ -1,5 +1,6 @@
 import { buildMockConfigYaml, createDefaultConfigDraft } from './configModel';
 import { orchestratorLogText, scenarioLogTextById } from './scenarioLogData';
+import { scenarioCommandById } from './scenarioCommandData';
 import type { MockAiFitnessPoint, MockAiHealthCheckSample, MockAiRun, MockAiScenario, MockAiTarget } from './types';
 
 const clusterNames = {
@@ -207,11 +208,7 @@ const scenarios: MockAiScenario[] = rawScenarios.map(([scenarioId, generation, s
     outcome: failed ? 'Failed' : 'Succeeded',
     podName,
     logText: scenarioLogTextById[scenarioId] ?? '',
-    arguments: [
-      '--scenario',
-      scenarioType,
-      ...Object.entries(parameters).flatMap(([name, value]) => [`--${name}`, value]),
-    ],
+    command: scenarioCommandById[scenarioId] ?? '',
     parameters,
     parentIds: parentScenarioIds.map((id) => scenarioUuids[id]),
     origin,

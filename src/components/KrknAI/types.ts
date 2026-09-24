@@ -81,8 +81,8 @@ export interface MockAiScenario {
   podName: string;
   logText: string;
   parameters: Partial<Record<MockAiScenarioParameter, string>>;
-  /** Allowlisted arguments only; the executable and environment are intentionally omitted. */
-  arguments: string[];
+  /** Exact command persisted with the supplied scenario result. */
+  command: string;
   parentIds: string[];
   origin: string;
   healthCheckFailureScore?: number;

@@ -304,7 +304,8 @@ describe('Krkn AI run inspection', () => {
     expect(within(dialog).getByText('11.6%')).toBeInTheDocument();
     expect(within(dialog).getByRole('img', { name: /Health-check response time by application/ })).toBeInTheDocument();
     expect(within(dialog).getByRole('img', { name: /Health-check success heatmap by application/ })).toBeInTheDocument();
-    expect(within(dialog).getByText('--scenario storage-throttle --namespace robot-shop', { exact: false })).toBeInTheDocument();
+    expect(within(dialog).getByText(/krknctl run storage-throttle --telemetry-prometheus-backup False/)).toBeInTheDocument();
+    expect(within(dialog).getByRole('button', { name: /^Copy scenario command/ })).toBeInTheDocument();
     expect(within(dialog).getByText(/Running StorageThrottleScenarioPlugin/)).toBeInTheDocument();
     expect(within(dialog).getByText(/I\/O throttle removed/)).toBeInTheDocument();
     await user.click(within(dialog).getByRole('button', { name: 'Close' }));

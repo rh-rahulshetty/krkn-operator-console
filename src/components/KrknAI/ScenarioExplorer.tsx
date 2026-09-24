@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { Label, Modal, ModalVariant, Title } from '@patternfly/react-core';
+import { ClipboardCopy, Label, Modal, ModalVariant, Title } from '@patternfly/react-core';
 import { ScenarioHealthCharts } from './ScenarioHealthCharts';
 import { StaticLogText } from './StaticLogText';
 import type { MockAiRun, MockAiScenario } from './types';
@@ -74,18 +74,30 @@ function ScenarioDetail({ scenario, runPhase }: { scenario: MockAiScenario; runP
             ))}
           </dl>
         ) : <p className="krkn-ai-not-available">Not available yet</p>}
-        <div className="krkn-ai-scenario-detail__arguments">
-          <h4>Allowlisted run arguments</h4>
-          <p className="krkn-ai-illustrative-note">The executable, environment, and credentials are intentionally omitted.</p>
-          {scenario.arguments.length > 0
-            ? <pre className="krkn-ai-log-panel__lines">{scenario.arguments.join(' ')}</pre>
+        <div className="krkn-ai-scenario-detail__command">
+          <h4>Scenario command</h4>
+          <p className="krkn-ai-illustrative-note">Exact command persisted with this scenario result.</p>
+          {scenario.command
+            ? (
+              <ClipboardCopy
+                className="krkn-ai-scenario-command"
+                variant="inline-compact"
+                isCode
+                isReadOnly
+                isBlock
+                hoverTip="Copy scenario command"
+                clickTip="Scenario command copied"
+              >
+                {scenario.command}
+              </ClipboardCopy>
+            )
             : <p className="krkn-ai-not-available">Not available yet</p>}
         </div>
       </section>
 
       <section className="krkn-ai-scenario-detail__section" aria-labelledby={`krkn-ai-fitness-result-${scenario.scenarioId}`}>
         <h3 id={`krkn-ai-fitness-result-${scenario.scenarioId}`}>Fitness function result</h3>
-        <p>Total recorded fitness: <strong>{formatFitness(scenario.fitnessScore)} fitness units</strong></p>
+        <p className="krkn-ai-scenario-detail__fitness-total">Total recorded fitness: <strong>{formatFitness(scenario.fitnessScore)} fitness units</strong></p>
         <dl className="krkn-ai-scenario-detail__metrics">
           {metrics.map(([label, value]) => (
             <div key={label}>
@@ -99,7 +111,14 @@ function ScenarioDetail({ scenario, runPhase }: { scenario: MockAiScenario; runP
       <section className="krkn-ai-scenario-detail__section" aria-labelledby={`krkn-ai-health-${scenario.scenarioId}`}>
         <h3 id={`krkn-ai-health-${scenario.scenarioId}`}>Health-check telemetry</h3>
         <dl className="krkn-ai-scenario-detail__metrics">
-          <div><dt>Health status</dt><dd>{scenario.healthChecks.status}</dd></div>
+          <div>
+            <dt>Health status</dt>
+            <dd>
+              <Label color={scenario.healthChecks.status === 'Healthy' ? 'green' : scenario.healthChecks.status === 'Failed' ? 'red' : 'orange'}>
+                {scenario.healthChecks.status}
+              </Label>
+            </dd>
+          </div>
           <div><dt>Total checks</dt><dd>{scenario.healthChecks.totalChecks}</dd></div>
           <div><dt>Failed checks</dt><dd>{scenario.healthChecks.failedChecks}</dd></div>
           <div><dt>Failure rate</dt><dd>{failureRate === null ? 'Not available yet' : `${(failureRate * 100).toFixed(1)}%`}</dd></div>
@@ -109,7 +128,7 @@ function ScenarioDetail({ scenario, runPhase }: { scenario: MockAiScenario; runP
 
       <section className="krkn-ai-log-panel" aria-label="Scenario pod log">
         <h3>Scenario pod log</h3>
-        <p className="krkn-ai-illustrative-note">Static copy of the supplied scenario log with ANSI control codes removed — no live pod was queried.</p>
+        <p className="krkn-ai-illustrative-note">Static copy of the supplied scenario log with ANSI formatting rendered — no live pod was queried.</p>
         <StaticLogText logText={scenario.logText} />
       </section>
     </div>
