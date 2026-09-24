@@ -45,9 +45,6 @@ function ScenarioDetail({ scenario, runPhase }: { scenario: MockAiScenario; runP
         </div>
         <div className="krkn-ai-scenario-detail__labels">
           <Label color={scenario.outcome === 'Failed' ? 'red' : 'green'}>{scenario.outcome}</Label>
-          <Label color={scenario.healthChecks.status === 'Healthy' ? 'green' : scenario.healthChecks.status === 'Failed' ? 'red' : 'orange'}>
-            Health: {scenario.healthChecks.status}
-          </Label>
         </div>
       </div>
       {scenario.outcome === 'Failed' && (
@@ -61,8 +58,6 @@ function ScenarioDetail({ scenario, runPhase }: { scenario: MockAiScenario; runP
         <div><dt>Scenario ID</dt><dd>{scenario.scenarioId}</dd></div>
         <div><dt>Duration</dt><dd>{scenario.durationSeconds.toLocaleString(undefined, { maximumFractionDigits: 2 })} seconds</dd></div>
         <div><dt>Fitness score</dt><dd>{formatFitness(scenario.fitnessScore)} fitness units</dd></div>
-        <div><dt>Origin</dt><dd>{scenario.origin || 'Not available yet'}</dd></div>
-        <div><dt>Parent scenarios</dt><dd>{scenario.parentIds.length > 0 ? scenario.parentIds.join(', ') : 'No parent scenarios (initial)'}</dd></div>
       </dl>
 
       <section className="krkn-ai-scenario-detail__section" aria-labelledby={`krkn-ai-run-config-${scenario.scenarioId}`}>

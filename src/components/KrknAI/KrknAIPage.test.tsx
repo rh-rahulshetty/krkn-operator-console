@@ -299,6 +299,9 @@ describe('Krkn AI run inspection', () => {
 
     await user.click(screen.getByRole('row', { name: 'Open scenario 1 details' }));
     const dialog = screen.getByRole('dialog', { name: 'Scenario 1: storage-throttle' });
+    expect(within(dialog).queryByText('Health: Degraded')).not.toBeInTheDocument();
+    expect(within(dialog).queryByText('Origin')).not.toBeInTheDocument();
+    expect(within(dialog).queryByText('Parent scenarios')).not.toBeInTheDocument();
     expect(within(dialog).getByText('500')).toBeInTheDocument();
     expect(within(dialog).getByText('58')).toBeInTheDocument();
     expect(within(dialog).getByText('11.6%')).toBeInTheDocument();

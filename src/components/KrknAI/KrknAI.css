@@ -256,8 +256,7 @@
 .krkn-ai-main-pod__metadata,
 .krkn-ai-scenario-detail__summary,
 .krkn-ai-scenario-detail__parameters,
-.krkn-ai-scenario-detail__metrics,
-.krkn-ai-scenario-detail__lineage {
+.krkn-ai-scenario-detail__metrics {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(min(100%, 13rem), 1fr));
   gap: 0.75rem;
@@ -267,8 +266,7 @@
 .krkn-ai-run-detail__metadata > div,
 .krkn-ai-main-pod__metadata > div,
 .krkn-ai-scenario-detail__summary > div,
-.krkn-ai-scenario-detail__parameters > div,
-.krkn-ai-scenario-detail__lineage > div {
+.krkn-ai-scenario-detail__parameters > div {
   min-width: 0;
   padding: 0.75rem;
   border: 1px solid var(--krkn-ai-border);
