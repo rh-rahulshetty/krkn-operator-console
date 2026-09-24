@@ -35,6 +35,8 @@ import { ProviderConfigTab } from './ProviderConfigTab';
 import { UserManagement } from './UserManagement';
 import { RegistriesCard } from './RegistriesCard';
 import { ElasticsearchConfigsCard } from './ElasticsearchConfigsCard';
+import { CloudCredentialsCard } from './CloudCredentialsCard';
+import { BackupRestoreCard } from './BackupRestoreCard';
 
 export function Settings() {
   const { state, dispatch } = useAppContext();
@@ -223,6 +225,15 @@ export function Settings() {
               </Tab>
             )}
 
+            {/* Cloud Credentials Tab - Admin Only */}
+            {isAdmin && (
+              <Tab eventKey={5} title={<TabTitleText>Cloud Credentials</TabTitleText>}>
+                <div style={{ marginTop: '1.5rem' }}>
+                  <CloudCredentialsCard />
+                </div>
+              </Tab>
+            )}
+
             {/* Provider Configuration Tab - Admin Only */}
             {isAdmin && (
               <Tab eventKey={3} title={<TabTitleText>Provider Configuration</TabTitleText>}>
@@ -320,6 +331,15 @@ export function Settings() {
                   </>
                 )}
               </div>
+              </Tab>
+            )}
+
+            {/* Backup & Restore Tab - Admin Only */}
+            {isAdmin && (
+              <Tab eventKey={6} title={<TabTitleText>Backup & Restore</TabTitleText>}>
+                <div style={{ marginTop: '1.5rem' }}>
+                  <BackupRestoreCard />
+                </div>
               </Tab>
             )}
           </Tabs>
