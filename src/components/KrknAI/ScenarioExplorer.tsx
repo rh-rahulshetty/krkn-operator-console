@@ -7,6 +7,7 @@ import type { MockAiRun, MockAiScenario } from './types';
 interface ScenarioExplorerProps {
   scenarios: MockAiScenario[];
   runPhase: MockAiRun['phase'];
+  completedGenerations: number | null;
 }
 
 type ScenarioSortKey = 'generation' | 'scenarioId' | 'scenarioType' | 'fitnessScore' | 'outcome' | 'durationSeconds';
@@ -26,7 +27,19 @@ function sortValue(scenario: MockAiScenario, key: ScenarioSortKey): string | num
   return scenario[key];
 }
 
+function scenarioOutcomeColor(outcome: MockAiScenario['outcome']): 'blue' | 'green' | 'red' {
+  if (outcome === 'Running') return 'blue';
+  return outcome === 'Failed' ? 'red' : 'green';
+}
+
+function hasCompletedFitness(scenario: MockAiScenario, completedGenerations: number | null): boolean {
+  return completedGenerations !== null
+    && scenario.generation < completedGenerations
+    && scenario.outcome !== 'Running';
+}
+
 function ScenarioDetail({ scenario, runPhase }: { scenario: MockAiScenario; runPhase: MockAiRun['phase'] }) {
+  const isRunning = scenario.outcome === 'Running';
   const parameters = Object.entries(scenario.parameters);
   const metrics = [
     ['Health-check failure score', scenario.healthCheckFailureScore],
@@ -44,7 +57,7 @@ function ScenarioDetail({ scenario, runPhase }: { scenario: MockAiScenario; runP
           <p className="krkn-ai-scenario-detail__pod">Scenario pod: <code>{scenario.podName}</code></p>
         </div>
         <div className="krkn-ai-scenario-detail__labels">
-          <Label color={scenario.outcome === 'Failed' ? 'red' : 'green'}>{scenario.outcome}</Label>
+          <Label color={scenarioOutcomeColor(scenario.outcome)}>{scenario.outcome}</Label>
         </div>
       </div>
       {scenario.outcome === 'Failed' && (
@@ -56,10 +69,12 @@ function ScenarioDetail({ scenario, runPhase }: { scenario: MockAiScenario; runP
       <dl className="krkn-ai-scenario-detail__summary">
         <div><dt>Generation</dt><dd>{scenario.generation + 1}</dd></div>
         <div><dt>Scenario ID</dt><dd>{scenario.scenarioId}</dd></div>
-        <div><dt>Duration</dt><dd>{scenario.durationSeconds.toLocaleString(undefined, { maximumFractionDigits: 2 })} seconds</dd></div>
-        <div><dt>Fitness score</dt><dd>{formatFitness(scenario.fitnessScore)} fitness units</dd></div>
+        <div><dt>{isRunning ? 'Elapsed' : 'Duration'}</dt><dd>{scenario.durationSeconds.toLocaleString(undefined, { maximumFractionDigits: 2 })} seconds</dd></div>
+        {!isRunning && <div><dt>Fitness score</dt><dd>{formatFitness(scenario.fitnessScore)} fitness units</dd></div>}
       </dl>
 
+      {!isRunning && (
+        <>
       <section className="krkn-ai-scenario-detail__section" aria-labelledby={`krkn-ai-run-config-${scenario.scenarioId}`}>
         <h3 id={`krkn-ai-run-config-${scenario.scenarioId}`}>Scenario run configuration</h3>
         {parameters.length > 0 ? (
@@ -120,17 +135,24 @@ function ScenarioDetail({ scenario, runPhase }: { scenario: MockAiScenario; runP
         </dl>
         <ScenarioHealthCharts scenarioId={scenario.scenarioId} samples={scenario.healthChecks.samples} />
       </section>
+        </>
+      )}
+      {isRunning && (
+        <p className="krkn-ai-scenario-detail__running-note">
+          Live mock snapshot. Configuration, fitness, and health-check results will appear after this scenario completes.
+        </p>
+      )}
 
       <section className="krkn-ai-log-panel" aria-label="Scenario pod log">
         <h3>Scenario pod log</h3>
-        <p className="krkn-ai-illustrative-note">Static copy of the supplied scenario log with ANSI formatting rendered — no live pod was queried.</p>
+        <p className="krkn-ai-illustrative-note">{isRunning ? 'Fixed mock snapshot of the active scenario log — no polling.' : 'Static copy of the supplied scenario log with ANSI formatting rendered — no live pod was queried.'}</p>
         <StaticLogText logText={scenario.logText} />
       </section>
     </div>
   );
 }
 
-export function ScenarioExplorer({ scenarios, runPhase }: ScenarioExplorerProps) {
+export function ScenarioExplorer({ scenarios, runPhase, completedGenerations }: ScenarioExplorerProps) {
   const [sortKey, setSortKey] = useState<ScenarioSortKey>('generation');
   const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
   const [search, setSearch] = useState('');
@@ -227,6 +249,8 @@ export function ScenarioExplorer({ scenarios, runPhase }: ScenarioExplorerProps)
             {visibleScenarios.map((scenario) => (
               <tr
                 key={scenario.scenarioId}
+                className={scenario.outcome === 'Running' ? 'krkn-ai-scenario-table__row--running' : undefined}
+                aria-current={scenario.outcome === 'Running' ? 'true' : undefined}
                 tabIndex={0}
                 aria-label={`Open scenario ${scenario.scenarioId} details`}
                 onClick={() => setSelectedScenario(scenario)}
@@ -240,9 +264,9 @@ export function ScenarioExplorer({ scenarios, runPhase }: ScenarioExplorerProps)
                 <td>{scenario.generation + 1}</td>
                 <th scope="row">{scenario.scenarioId}</th>
                 <td>{scenario.scenarioType}</td>
-                <td>{formatFitness(scenario.fitnessScore)}</td>
-                <td><Label color={scenario.outcome === 'Failed' ? 'red' : 'green'}>{scenario.outcome}</Label></td>
-                <td>{scenario.durationSeconds.toLocaleString(undefined, { maximumFractionDigits: 2 })}s</td>
+                <td>{hasCompletedFitness(scenario, completedGenerations) ? formatFitness(scenario.fitnessScore) : <span className="krkn-ai-pending-value">Pending</span>}</td>
+                <td><Label color={scenarioOutcomeColor(scenario.outcome)}>{scenario.outcome}</Label></td>
+                <td>{scenario.durationSeconds.toLocaleString(undefined, { maximumFractionDigits: 2 })}s{scenario.outcome === 'Running' ? ' elapsed' : ''}</td>
               </tr>
             ))}
           </tbody>

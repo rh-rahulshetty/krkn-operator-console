@@ -1,7 +1,7 @@
 import type { SelectedCluster } from '../../types/api';
 
 export type MockAiRunPhase = 'Pending' | 'Provisioning' | 'Running' | 'Succeeded' | 'Failed' | 'Cancelled';
-export type MockAiScenarioOutcome = 'Succeeded' | 'Failed';
+export type MockAiScenarioOutcome = 'Running' | 'Succeeded' | 'Failed';
 export type MockAiMainPodStatus = 'Pending' | 'Running' | 'Succeeded' | 'Failed' | 'Not created';
 export type MockAiHealthStatus = 'Healthy' | 'Degraded' | 'Failed' | 'Unavailable';
 

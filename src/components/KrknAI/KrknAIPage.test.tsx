@@ -266,7 +266,7 @@ describe('Krkn AI run inspection', () => {
     expect(completedRow).toHaveTextContent('6 / 6');
     expect(completedRow).toHaveTextContent('24 / 24');
     expect(screen.getByRole('row', { name: /Open run staging-preview-in-progress/ })).toHaveTextContent('2 / 6');
-    expect(screen.getByRole('row', { name: /Open run staging-preview-in-progress/ })).toHaveTextContent('8 / 24');
+    expect(screen.getByRole('row', { name: /Open run staging-preview-in-progress/ })).toHaveTextContent('9 / 24');
 
     await user.click(completedRow);
     expect(screen.getByText('Scenarios executed').nextSibling).toHaveTextContent('24');
@@ -316,6 +316,33 @@ describe('Krkn AI run inspection', () => {
     await user.click(screen.getByRole('row', { name: 'Open scenario 17 details' }));
     expect(screen.getByText(/scenario failed; the overall run phase is Succeeded/)).toBeInTheDocument();
     expect(screen.getAllByText('-1 fitness units').length).toBeGreaterThan(0);
+  });
+
+  it('shows one active scenario with pending fitness and log-only live details', async () => {
+    const user = userEvent.setup();
+    render(<KrknAIPage runs={mockAiRuns} onAddRun={vi.fn()} />);
+
+    await user.click(screen.getByRole('row', { name: /Open run staging-preview-in-progress/ }));
+    expect(screen.getByRole('img', { name: /across 2 observed generations/ })).toBeInTheDocument();
+    expect(screen.getByText(/chart of completed generations.*refresh when generation 3 completes/i)).toBeInTheDocument();
+
+    const scenarioTable = screen.getByRole('table', { name: 'Scenario executions' });
+    expect(within(scenarioTable).getAllByRole('row')).toHaveLength(10);
+    expect(within(scenarioTable).getAllByText('Running')).toHaveLength(1);
+    const activeRow = within(scenarioTable).getByRole('row', { name: 'Open scenario 9 details' });
+    expect(activeRow).toHaveTextContent('Pending');
+    expect(activeRow).toHaveTextContent('38.42s elapsed');
+
+    await user.click(activeRow);
+    const dialog = screen.getByRole('dialog', { name: 'Scenario 9: container-scenarios' });
+    expect(within(dialog).getByText('Running')).toBeInTheDocument();
+    expect(within(dialog).getByText('Elapsed')).toBeInTheDocument();
+    expect(within(dialog).queryByRole('heading', { name: 'Scenario run configuration' })).not.toBeInTheDocument();
+    expect(within(dialog).queryByRole('heading', { name: 'Fitness function result' })).not.toBeInTheDocument();
+    expect(within(dialog).queryByRole('heading', { name: 'Health-check telemetry' })).not.toBeInTheDocument();
+    expect(within(dialog).getByText(/Running ContainerScenarioPlugin/)).toBeInTheDocument();
+    expect(within(dialog).getByText(/Scenario is still running/)).toBeInTheDocument();
+    expect(within(dialog).queryByText(/successfully injected/)).not.toBeInTheDocument();
   });
 
   it('adds a newly launched run to the session list with zero observed progress', async () => {

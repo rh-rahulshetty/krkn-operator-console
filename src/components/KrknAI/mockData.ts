@@ -262,7 +262,18 @@ const completedRun: MockAiRun = {
   },
 };
 
-const runningScenarios = scenarios.filter((scenario) => scenario.generation < 2);
+const runningLogCutoff = 'Scenario kill container successfully injected';
+const completeRunningLog = scenarioLogTextById[9] ?? '';
+const runningLogCutoffIndex = completeRunningLog.indexOf(runningLogCutoff);
+const runningLogSnapshotEnd = runningLogCutoffIndex < 0 ? completeRunningLog.length : completeRunningLog.lastIndexOf('\n', runningLogCutoffIndex) + 1;
+const runningLogSnapshot = `${completeRunningLog.slice(0, runningLogSnapshotEnd)}[MOCK SNAPSHOT] Scenario is still running; subsequent output is not available yet.\n`;
+const runningScenario: MockAiScenario = {
+  ...scenarios[8],
+  outcome: 'Running',
+  durationSeconds: 38.42,
+  logText: runningLogSnapshot,
+};
+const runningScenarios = [...scenarios.filter((scenario) => scenario.generation < 2), runningScenario];
 
 const runningRun: MockAiRun = {
   name: 'staging-preview-in-progress',
@@ -283,7 +294,7 @@ const runningRun: MockAiRun = {
     status: 'Running',
     logText: mockLog('Fixed mock snapshot: two generations are complete.'),
   },
-  snapshotLabel: 'Fixed mock snapshot — no polling',
+  snapshotLabel: 'Fixed mock live snapshot — generation 3, scenario 9 is running; no polling.',
 };
 
 const failedRun: MockAiRun = {

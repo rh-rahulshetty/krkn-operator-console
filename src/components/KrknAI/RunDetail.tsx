@@ -29,11 +29,15 @@ function MockLogPanel({ title, logText, description }: MockLogPanelProps) {
 
 
 export function RunDetail({ run, onBack }: RunDetailProps) {
+  const completedGenerationCount = run.completedGenerations ?? 0;
+  const completedScenarios = run.scenarios.filter(
+    (scenario) => scenario.generation < completedGenerationCount && scenario.outcome !== 'Running',
+  );
   const bestFitness = run.progression.length > 0
     ? Math.max(...run.progression.map((point) => point.best))
     : null;
-  const averageFitness = run.scenarios.length > 0
-    ? run.scenarios.reduce((total, scenario) => total + scenario.fitnessScore, 0) / run.scenarios.length
+  const averageFitness = completedScenarios.length > 0
+    ? completedScenarios.reduce((total, scenario) => total + scenario.fitnessScore, 0) / completedScenarios.length
     : null;
 
   return (
@@ -93,6 +97,11 @@ export function RunDetail({ run, onBack }: RunDetailProps) {
       <Card className="krkn-ai-run-detail__fitness">
         <CardBody>
           <FitnessChart points={run.progression} runName={run.name} />
+          {run.phase === 'Running' && (
+            <p className="krkn-ai-snapshot-label">
+              Static mock chart of completed generations. A live view would refresh when generation {run.completedGenerations === null ? 1 : run.completedGenerations + 1} completes.
+            </p>
+          )}
           {run.baselineFitness !== undefined && (
             <p className="krkn-ai-baseline-fitness">
               Illustrative baseline fitness: {formatFitness(run.baselineFitness)} fitness units
@@ -101,7 +110,12 @@ export function RunDetail({ run, onBack }: RunDetailProps) {
         </CardBody>
       </Card>
 
-      <ScenarioExplorer key={run.runId ?? run.name} scenarios={run.scenarios} runPhase={run.phase} />
+      <ScenarioExplorer
+        key={run.runId ?? run.name}
+        scenarios={run.scenarios}
+        runPhase={run.phase}
+        completedGenerations={run.completedGenerations}
+      />
     </main>
   );
 }

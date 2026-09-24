@@ -332,6 +332,14 @@
   background: var(--pf-v5-global--BackgroundColor--200, rgba(0, 0, 0, 0.04));
 }
 
+.krkn-ai-scenario-detail__running-note {
+  margin-block: 1.25rem;
+  padding: 0.85rem 1rem;
+  border-inline-start: 4px solid var(--pf-v5-global--primary-color--100, #0066cc);
+  border-radius: 4px;
+  background: var(--pf-v5-global--BackgroundColor--200, rgba(0, 102, 204, 0.08));
+}
+
 .krkn-ai-illustrative-note,
 .krkn-ai-not-available {
   color: var(--krkn-ai-muted);
@@ -431,6 +439,16 @@
 
 .krkn-ai-scenario-table tbody tr {
   cursor: pointer;
+}
+
+.krkn-ai-scenario-table__row--running {
+  background: color-mix(in srgb, var(--pf-v5-global--primary-color--100, #0066cc) 9%, transparent);
+  box-shadow: inset 4px 0 0 var(--pf-v5-global--primary-color--100, #0066cc);
+}
+
+.krkn-ai-pending-value {
+  color: var(--krkn-ai-muted);
+  font-style: italic;
 }
 
 .krkn-ai-scenario-table tbody tr:hover,
