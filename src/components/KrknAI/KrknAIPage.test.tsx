@@ -270,6 +270,9 @@ describe('Krkn AI run inspection', () => {
 
     await user.click(completedRow);
     expect(screen.getByText('Scenarios executed').nextSibling).toHaveTextContent('24');
+    const mainPodOutput = screen.getByLabelText('Main pod output');
+    expect(within(mainPodOutput).getByText(/Krkn-AI run UUID: 90715e34-b0ff-40cd-b96f-9b6cdd59a033/)).toBeInTheDocument();
+    expect(within(mainPodOutput).getByText(/Generation 1 — 4 scenarios/)).toBeInTheDocument();
     expect(screen.queryByRole('heading', { name: 'Uploader' })).not.toBeInTheDocument();
     expect(screen.queryByRole('heading', { name: 'Orchestrator' })).not.toBeInTheDocument();
     expect(screen.queryByRole('table', { name: /Numeric fitness values/ })).not.toBeInTheDocument();

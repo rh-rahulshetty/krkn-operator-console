@@ -343,6 +343,11 @@
   overflow-wrap: anywhere;
 }
 
+.krkn-ai-log-panel > .krkn-ai-log-panel__lines {
+  max-height: 28rem;
+  overflow: auto;
+}
+
 .krkn-ai-scenario-explorer {
   min-width: 0;
   padding: 1rem;

@@ -1,6 +1,7 @@
 import { Button, Card, CardBody, CardTitle, Label, Title } from '@patternfly/react-core';
 import { FitnessChart } from './FitnessChart';
 import { ScenarioExplorer } from './ScenarioExplorer';
+import { StaticLogText } from './StaticLogText';
 import type { MockAiRun } from './types';
 
 interface RunDetailProps {
@@ -10,19 +11,18 @@ interface RunDetailProps {
 
 interface MockLogPanelProps {
   title: string;
-  logLines: string[];
+  description: string;
+  logText: string;
 }
 
 const formatFitness = (value: number) => value.toLocaleString(undefined, { maximumFractionDigits: 4 });
 
-function MockLogPanel({ title, logLines }: MockLogPanelProps) {
+function MockLogPanel({ title, logText, description }: MockLogPanelProps) {
   return (
     <section className="krkn-ai-log-panel" aria-label={title}>
       <h4>{title}</h4>
-      <p className="krkn-ai-illustrative-note">Illustrative mock log text — no live pod was queried.</p>
-      {logLines.length > 0
-        ? <pre className="krkn-ai-log-panel__lines">{logLines.join('\n')}</pre>
-        : <p className="krkn-ai-not-available">Not available yet</p>}
+      <p className="krkn-ai-illustrative-note">{description}</p>
+      <StaticLogText logText={logText} />
     </section>
   );
 }
@@ -80,7 +80,13 @@ export function RunDetail({ run, onBack }: RunDetailProps) {
             <div><dt>Pod</dt><dd>{run.mainPod.podName ?? 'Not available yet'}</dd></div>
             <div><dt>Status</dt><dd>{run.mainPod.status}</dd></div>
           </dl>
-          <MockLogPanel title="Main pod output" logLines={run.mainPod.logLines} />
+          <MockLogPanel
+            title="Main pod output"
+            logText={run.mainPod.logText}
+            description={run.runId === '90715e34-b0ff-40cd-b96f-9b6cdd59a033'
+              ? 'Static copy of the supplied run.log with ANSI control codes removed — no live pod was queried.'
+              : 'Illustrative static log fixture — no live pod was queried.'}
+          />
         </CardBody>
       </Card>
 

@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import { Label, Modal, ModalVariant, Title } from '@patternfly/react-core';
 import { ScenarioHealthCharts } from './ScenarioHealthCharts';
+import { StaticLogText } from './StaticLogText';
 import type { MockAiRun, MockAiScenario } from './types';
 
 interface ScenarioExplorerProps {
@@ -108,10 +109,8 @@ function ScenarioDetail({ scenario, runPhase }: { scenario: MockAiScenario; runP
 
       <section className="krkn-ai-log-panel" aria-label="Scenario pod log">
         <h3>Scenario pod log</h3>
-        <p className="krkn-ai-illustrative-note">Sanitized excerpt from the supplied scenario log — no live pod was queried.</p>
-        {scenario.logLines.length > 0
-          ? <pre className="krkn-ai-log-panel__lines">{scenario.logLines.join('\n')}</pre>
-          : <p className="krkn-ai-not-available">Not available yet</p>}
+        <p className="krkn-ai-illustrative-note">Static copy of the supplied scenario log with ANSI control codes removed — no live pod was queried.</p>
+        <StaticLogText logText={scenario.logText} />
       </section>
     </div>
   );

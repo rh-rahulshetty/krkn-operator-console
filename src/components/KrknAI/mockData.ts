@@ -1,5 +1,5 @@
 import { buildMockConfigYaml, createDefaultConfigDraft } from './configModel';
-import { getScenarioLogLines } from './scenarioLogData';
+import { orchestratorLogText, scenarioLogTextById } from './scenarioLogData';
 import type { MockAiFitnessPoint, MockAiHealthCheckSample, MockAiRun, MockAiScenario, MockAiTarget } from './types';
 
 const clusterNames = {
@@ -206,7 +206,7 @@ const scenarios: MockAiScenario[] = rawScenarios.map(([scenarioId, generation, s
     durationSeconds,
     outcome: failed ? 'Failed' : 'Succeeded',
     podName,
-    logLines: getScenarioLogLines(scenarioType, failed),
+    logText: scenarioLogTextById[scenarioId] ?? '',
     arguments: [
       '--scenario',
       scenarioType,
@@ -239,10 +239,7 @@ const progression: MockAiFitnessPoint[] = [
 
 const eastTarget = mockAiTargets[0];
 const westTarget = mockAiTargets[1];
-const mockLogs = (message: string) => [
-  'Illustrative mock log snippet; no live pod was queried.',
-  message,
-];
+const mockLog = (message: string) => `Illustrative mock log snippet; no live pod was queried.\n${message}`;
 
 const configYamlFor = (target: MockAiTarget) => buildMockConfigYaml(target, createDefaultConfigDraft(target));
 
@@ -264,7 +261,7 @@ const completedRun: MockAiRun = {
   mainPod: {
     podName: 'mock-krkn-ai-orchestrator-robot-shop-exploration',
     status: 'Succeeded',
-    logLines: mockLogs('Mock sample fixture reports six completed generations.'),
+    logText: orchestratorLogText,
   },
 };
 
@@ -287,7 +284,7 @@ const runningRun: MockAiRun = {
   mainPod: {
     podName: 'mock-krkn-ai-orchestrator-staging-preview-in-progress',
     status: 'Running',
-    logLines: mockLogs('Fixed mock snapshot: two generations are complete.'),
+    logText: mockLog('Fixed mock snapshot: two generations are complete.'),
   },
   snapshotLabel: 'Fixed mock snapshot — no polling',
 };
@@ -309,7 +306,7 @@ const failedRun: MockAiRun = {
   mainPod: {
     podName: 'mock-krkn-ai-orchestrator-failed-preview',
     status: 'Failed',
-    logLines: mockLogs('Illustrative main pod exited non-zero.'),
+    logText: mockLog('Illustrative main pod exited non-zero.'),
   },
   failureReason: 'Illustrative orchestrator pod exited non-zero',
 };

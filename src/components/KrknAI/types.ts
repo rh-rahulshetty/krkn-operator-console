@@ -79,7 +79,7 @@ export interface MockAiScenario {
   durationSeconds: number;
   outcome: MockAiScenarioOutcome;
   podName: string;
-  logLines: string[];
+  logText: string;
   parameters: Partial<Record<MockAiScenarioParameter, string>>;
   /** Allowlisted arguments only; the executable and environment are intentionally omitted. */
   arguments: string[];
@@ -119,7 +119,7 @@ export interface MockAiRun {
   mainPod: {
     podName?: string;
     status: MockAiMainPodStatus;
-    logLines: string[];
+    logText: string;
   };
   failureReason?: string;
   /** Fixed, non-polling snapshot annotation for seeded in-progress fixtures. */

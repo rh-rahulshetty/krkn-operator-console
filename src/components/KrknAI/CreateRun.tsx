@@ -251,7 +251,7 @@ export function CreateRun({ existingNames, onStart, onCancel }: CreateRunProps) 
       progression: [],
       mainPod: {
         status: 'Pending',
-        logLines: ['Illustrative mock run request queued; no Kubernetes resources were created.'],
+        logText: 'Illustrative mock run request queued; no Kubernetes resources were created.',
       },
     });
   };
