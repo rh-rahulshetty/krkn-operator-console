@@ -13,6 +13,14 @@ function renderCreateRun(existingNames: string[] = []) {
   return { onStart, onCancel };
 }
 
+interface WizardInteraction {
+  click: (element: Element) => Promise<void>;
+}
+
+async function goToConfigSection(user: WizardInteraction, section: string) {
+  await user.click(screen.getByRole('button', { name: new RegExp(section, 'i') }));
+}
+
 describe('Krkn AI mock run creation', () => {
   it('rejects an empty or duplicate DNS-label run name', async () => {
     const user = userEvent.setup();
@@ -30,6 +38,11 @@ describe('Krkn AI mock run creation', () => {
     renderCreateRun();
     await user.type(screen.getByRole('textbox', { name: /Run name/ }), 'scenario-check');
     await user.click(screen.getByRole('button', { name: 'Discover components' }));
+    const sectionNav = screen.getByRole('navigation', { name: 'Configuration sections' });
+    expect(screen.getByText('Section 1 of 7')).toBeInTheDocument();
+    expect(within(sectionNav).getByRole('button', { name: /Scenarios/ })).toHaveAttribute('aria-current', 'step');
+    expect(screen.getByText('Choose what Krkn AI can explore')).toBeInTheDocument();
+    await goToConfigSection(user, 'Genetic algorithm');
     const generationsInput = screen.getByRole('spinbutton', { name: 'Generations' });
     const populationInput = screen.getByRole('spinbutton', { name: /Population size/ });
     await user.clear(generationsInput);
@@ -38,14 +51,14 @@ describe('Krkn AI mock run creation', () => {
     await user.type(populationInput, '0');
     expect(screen.getByText('Generations must be at least 1.')).toBeInTheDocument();
     expect(screen.getByText('Population size must be at least 1.')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Create config (mock)' })).toBeDisabled();
 
-
+    await goToConfigSection(user, 'Scenarios');
     for (const label of ['Storage throttle', 'DNS outage', 'Container scenarios', 'PVC scenarios']) {
       await user.click(screen.getByLabelText(label));
     }
 
     expect(screen.getByText('Enable at least one scenario type.')).toBeInTheDocument();
+    await goToConfigSection(user, 'Review YAML');
     expect(screen.getByRole('button', { name: 'Create config (mock)' })).toBeDisabled();
   }, 15_000);
 
@@ -56,6 +69,7 @@ describe('Krkn AI mock run creation', () => {
     await user.click(screen.getByRole('button', { name: 'Discover components' }));
 
     expect(screen.queryByRole('button', { name: 'Start run (mock)' })).not.toBeInTheDocument();
+    await goToConfigSection(user, 'Review YAML');
     await user.click(screen.getByRole('button', { name: 'Create config (mock)' }));
     expect(screen.getByRole('button', { name: 'Start run (mock)' })).toBeEnabled();
     expect(onStart).not.toHaveBeenCalled();
@@ -86,13 +100,16 @@ describe('Krkn AI mock run creation', () => {
     renderCreateRun();
     await user.type(screen.getByRole('textbox', { name: /Run name/ }), 'config-refresh');
     await user.click(screen.getByRole('button', { name: 'Discover components' }));
+    await goToConfigSection(user, 'Review YAML');
     await user.click(screen.getByRole('button', { name: 'Create config (mock)' }));
     expect(screen.getByText('mock-config-config-refresh')).toBeInTheDocument();
 
     await user.click(screen.getByRole('button', { name: 'Back' }));
+    await goToConfigSection(user, 'Genetic algorithm');
     const generationsInput = screen.getByRole('spinbutton', { name: 'Generations' });
     await user.clear(generationsInput);
     await user.type(generationsInput, '3');
+    await goToConfigSection(user, 'Review YAML');
     await waitFor(() => expect(screen.getByRole('button', { name: 'Create config (mock)' })).toBeEnabled());
     await user.click(screen.getByRole('button', { name: 'Create config (mock)' }));
 
@@ -106,9 +123,8 @@ describe('Krkn AI mock run creation', () => {
     await user.click(screen.getByRole('button', { name: 'Discover components' }));
     expect(screen.queryByText('Kubeconfig file path')).not.toBeInTheDocument();
 
-    expect(screen.getByText('Algorithm · genetic')).toBeInTheDocument();
-    expect(screen.getByText('Health checks')).toBeInTheDocument();
-    expect(screen.getByText('Fitness function')).toBeInTheDocument();
+    await goToConfigSection(user, 'Fitness functions');
+    expect(screen.getByText('Fitness function items')).toBeInTheDocument();
     expect(screen.getByText('Item 15')).toBeInTheDocument();
     await user.click(screen.getByText(/Pod container restarts/));
     const query = screen.getByRole('textbox', { name: 'Fitness item 0 query' });
@@ -117,22 +133,30 @@ describe('Krkn AI mock run creation', () => {
     const weight = screen.getByRole('spinbutton', { name: 'Fitness item 0 weight' });
     await user.clear(weight);
     await user.type(weight, '0.2');
+
+    await goToConfigSection(user, 'Genetic algorithm');
     const mutationRate = screen.getByRole('spinbutton', { name: 'Mutation rate' });
     await user.clear(mutationRate);
     await user.type(mutationRate, '0.4');
-    const outputFormat = screen.getByRole('textbox', { name: 'result_name_fmt' });
-    await user.clear(outputFormat);
-    await user.type(outputFormat, 'custom_%s.yaml');
 
-    await user.click(screen.getByText(/robot-shop.*robot-shop-health/));
+    await goToConfigSection(user, 'Health checks');
+    await user.click(screen.getByText('robot-shop', { exact: true }));
     const healthUrl = screen.getByRole('textbox', { name: 'Health check 0 URL' });
     await user.clear(healthUrl);
     await user.type(healthUrl, 'https://health.live-cluster.example.org/ready');
     expect(screen.getByText(/reserved example.com domain/)).toBeInTheDocument();
+    await goToConfigSection(user, 'Review YAML');
     expect(screen.getByRole('button', { name: 'Create config (mock)' })).toBeDisabled();
-    await user.clear(healthUrl);
-    await user.type(healthUrl, 'https://health-preview.example.com/ready');
+    await goToConfigSection(user, 'Health checks');
+    const correctedHealthUrl = screen.getByRole('textbox', { name: 'Health check 0 URL' });
+    await user.clear(correctedHealthUrl);
+    await user.type(correctedHealthUrl, 'https://health-preview.example.com/ready');
 
+    await goToConfigSection(user, 'Run settings');
+    const outputFormat = screen.getByRole('textbox', { name: 'result_name_fmt' });
+    await user.clear(outputFormat);
+    await user.type(outputFormat, 'custom_%s.yaml');
+    await goToConfigSection(user, 'Review YAML');
     const preview = (screen.getByLabelText('Generated krkn-ai.yaml preview') as HTMLTextAreaElement).value;
     expect(preview).toContain('query: "sum(kube_pod_container_status_restarts_total) * 2"');
     expect(preview).toContain('weight: 0.2');
@@ -154,20 +178,24 @@ describe('Krkn AI mock run creation', () => {
     await user.type(screen.getByRole('textbox', { name: /Run name/ }), 'prod-health-preview');
     await user.selectOptions(screen.getByRole('combobox', { name: 'Select one cluster' }), 'mock-ai-target-prod-us-central1');
     await user.click(screen.getByRole('button', { name: 'Discover components' }));
+    await goToConfigSection(user, 'Health checks');
 
-    expect(screen.getByText('No active health checks in this mock discovery')).toBeInTheDocument();
+    expect(screen.getByText(/No health checks configured in this mock config/)).toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: 'Add health check (mock)' }));
     expect(screen.getByRole('textbox', { name: 'Health check 0 URL' })).toHaveValue('https://service.example.com/healthz');
 
-    const preview = (screen.getByLabelText('Generated krkn-ai.yaml preview') as HTMLTextAreaElement).value;
+    await goToConfigSection(user, 'Review YAML');
+    let preview = (screen.getByLabelText('Generated krkn-ai.yaml preview') as HTMLTextAreaElement).value;
     expect(preview).toContain('https://service.example.com/healthz');
     expect(preview).toContain('payments');
     expect(preview).not.toContain('https://api.prod.example.com:6443');
+    await goToConfigSection(user, 'Health checks');
     await user.click(screen.getByText('application-0'));
     await user.click(screen.getByRole('button', { name: 'Remove health check application-0' }));
     expect(screen.getByText(/No health checks configured in this mock config/)).toBeInTheDocument();
-    const emptyHealthChecksYaml = (screen.getByLabelText('Generated krkn-ai.yaml preview') as HTMLTextAreaElement).value;
-    expect(emptyHealthChecksYaml).toContain('  applications: []');
+    await goToConfigSection(user, 'Review YAML');
+    preview = (screen.getByLabelText('Generated krkn-ai.yaml preview') as HTMLTextAreaElement).value;
+    expect(preview).toContain('  applications: []');
     expect(screen.getByRole('button', { name: 'Create config (mock)' })).toBeEnabled();
   });
   it('uses wildcard discovery defaults and rebinds filters to the selected cluster', async () => {
@@ -186,6 +214,7 @@ describe('Krkn AI mock run creation', () => {
     await user.selectOptions(screen.getByRole('combobox', { name: 'Select one cluster' }), 'mock-ai-target-staging-eu-west-1');
     await user.click(screen.getByRole('button', { name: 'Discover components' }));
 
+    await goToConfigSection(user, 'Review YAML');
     const preview = (screen.getByLabelText('Generated krkn-ai.yaml preview') as HTMLTextAreaElement).value;
     expect(screen.queryByText('Namespace pattern')).not.toBeInTheDocument();
     expect(preview).toContain('name: "cart-1"');
@@ -210,6 +239,7 @@ describe('Krkn AI mock run creation', () => {
     await user.type(nodeLabelPattern, 'node-role.*');
     await user.click(screen.getByRole('button', { name: 'Discover components' }));
 
+    await goToConfigSection(user, 'Review YAML');
     const preview = (screen.getByLabelText('Generated krkn-ai.yaml preview') as HTMLTextAreaElement).value;
     expect(preview).toContain('name: "cart-1"');
     expect(preview).toContain('name: "payment-1"');
@@ -223,26 +253,30 @@ describe('Krkn AI mock run creation', () => {
     renderCreateRun();
     await user.type(screen.getByRole('textbox', { name: /Run name/ }), 'component-flags');
     await user.click(screen.getByRole('button', { name: 'Discover components' }));
+    await goToConfigSection(user, 'Cluster components');
 
     const namespaceToggle = screen.getByRole('checkbox', { name: 'Enable namespace robot-shop' });
     expect(namespaceToggle).toBeChecked();
     expect(screen.getByRole('checkbox', { name: 'Enable pod cart-1' })).toBeChecked();
     await user.click(namespaceToggle);
 
+    await goToConfigSection(user, 'Review YAML');
     let preview = (screen.getByLabelText('Generated krkn-ai.yaml preview') as HTMLTextAreaElement).value;
     expect(preview).toMatch(/name: "robot-shop"\s+disabled: true/);
     expect(preview).toMatch(/name: "cart-1"\s+disabled: true/);
     expect(preview).toMatch(/containers:\s+- name: "cart"\s+disabled: true/);
     expect(preview).toMatch(/services:\s+- name: "cart"\s+disabled: true/);
     expect(preview).toMatch(/name: "data-redis-0"\s+disabled: true/);
-    expect(screen.getByRole('checkbox', { name: 'Enable pod cart-1' })).toBeDisabled();
 
+    await goToConfigSection(user, 'Cluster components');
+    expect(screen.getByRole('checkbox', { name: 'Enable pod cart-1' })).toBeDisabled();
     await user.click(screen.getByRole('checkbox', { name: 'Enable namespace robot-shop' }));
     const podToggle = screen.getByRole('checkbox', { name: 'Enable pod cart-1' });
     expect(podToggle).toBeEnabled();
     expect(podToggle).toBeChecked();
     expect(screen.getByRole('checkbox', { name: 'Enable container cart in cart-1' })).toBeChecked();
     await user.click(screen.getByRole('checkbox', { name: 'Enable node worker-1' }));
+    await goToConfigSection(user, 'Review YAML');
     preview = (screen.getByLabelText('Generated krkn-ai.yaml preview') as HTMLTextAreaElement).value;
     expect((preview.match(/disabled: true/g) ?? [])).toHaveLength(1);
     expect(preview).toMatch(/name: "robot-shop"\s+disabled: false/);
@@ -351,9 +385,11 @@ describe('Krkn AI run inspection', () => {
     await user.click(screen.getByRole('button', { name: 'Create run' }));
     await user.type(screen.getByRole('textbox', { name: /Run name/ }), 'ai-preview-1');
     await user.click(screen.getByRole('button', { name: 'Discover components' }));
+    await goToConfigSection(user, 'Genetic algorithm');
     const generations = screen.getByRole('spinbutton', { name: 'Generations' });
     await user.clear(generations);
     await user.type(generations, '3');
+    await goToConfigSection(user, 'Review YAML');
     await user.click(screen.getByRole('button', { name: 'Create config (mock)' }));
     await user.click(screen.getByRole('button', { name: 'Start run (mock)' }));
 

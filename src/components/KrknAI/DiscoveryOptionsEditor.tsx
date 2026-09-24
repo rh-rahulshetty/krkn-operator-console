@@ -1,6 +1,6 @@
-import { Card, CardBody, CardTitle, FormGroup, TextInput } from '@patternfly/react-core';
-import type { MockDiscoveryOptions } from './discoveryOptions';
-import type { DiscoveryOptionErrors } from './discoveryOptions';
+import { Alert, Card, CardBody, CardTitle, FormGroup, TextInput } from '@patternfly/react-core';
+import { SearchIcon } from '@patternfly/react-icons';
+import type { MockDiscoveryOptions, DiscoveryOptionErrors } from './discoveryOptions';
 
 interface DiscoveryOptionsEditorProps {
   options: MockDiscoveryOptions;
@@ -11,9 +11,16 @@ interface DiscoveryOptionsEditorProps {
 export function DiscoveryOptionsEditor({ options, errors, onChange }: DiscoveryOptionsEditorProps) {
   return (
     <Card>
-      <CardTitle>Discovery options</CardTitle>
+      <CardTitle>
+        <div className="krkn-ai-config-wizard__title">
+          <span className="krkn-ai-config-wizard__title-icon" aria-hidden="true"><SearchIcon /></span>
+          <span>Discovery options</span>
+        </div>
+      </CardTitle>
       <CardBody>
-        <p className="krkn-ai-muted">These mock options mirror the Krkn AI discovery request and filter the synthetic inventory locally; no discovery HTTP request is sent. Use <code>*</code> to match everything; comma-separated and exclusion patterns are supported. A blank skip pattern excludes no pods.</p>
+        <Alert variant="info" title="Filter the local preview inventory" isInline>
+          Patterns default to <code>*</code> and support comma-separated alternatives, regular expressions, and <code>!</code> exclusions. No cluster discovery request is sent.
+        </Alert>
         <div className="krkn-ai-config-fields">
           <FormGroup label="Namespace pattern" fieldId="krkn-ai-discovery-namespace-pattern" isRequired>
             <TextInput
