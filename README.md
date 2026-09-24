@@ -64,6 +64,12 @@ Open `http://127.0.0.1:3000/app` and choose **Krkn AI** in the sidebar. Discover
 
 Discovery data, seeded runs, and health-check URLs on the reserved `example.com` domain are illustrative. Creating a run updates only browser-session memory; the flow sends no Krkn AI or target API requests, never requests health-check URLs, and never creates Kubernetes resources.
 
+### Temporary GitHub Pages preview
+
+`.github/workflows/deploy-main-preview.yml` builds preview mode from `main` and publishes `dist/` to the `gh-pages` branch. In repository **Settings → Pages**, select **Deploy from a branch**, then choose `gh-pages` and `/ (root)`. The preview is available at `https://<owner>.github.io/<repository>/`; direct SPA routes are handled by the generated `404.html`.
+
+The workflow also supports manual runs from the Actions tab. Remove the workflow when sharing is complete; disable Pages as well if PR previews are no longer needed.
+
 ### Other Commands
 
 ```bash
