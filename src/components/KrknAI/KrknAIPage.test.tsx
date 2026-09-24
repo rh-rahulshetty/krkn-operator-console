@@ -279,6 +279,8 @@ describe('Krkn AI run inspection', () => {
 
     const scenarioTable = screen.getByRole('table', { name: 'Scenario executions' });
     expect(within(scenarioTable).getAllByRole('row')).toHaveLength(25);
+    expect(within(scenarioTable).queryByRole('columnheader', { name: 'Health checks' })).not.toBeInTheDocument();
+    expect(within(scenarioTable).queryByRole('columnheader', { name: 'Origin' })).not.toBeInTheDocument();
     await user.click(within(scenarioTable).getByRole('button', { name: 'Fitness score' }));
     await user.click(within(scenarioTable).getByRole('button', { name: /Fitness score/ }));
     expect(within(scenarioTable).getAllByRole('row')[1]).toHaveTextContent('30.4453');
@@ -300,6 +302,8 @@ describe('Krkn AI run inspection', () => {
     expect(within(dialog).getByRole('img', { name: /Health-check response time by application/ })).toBeInTheDocument();
     expect(within(dialog).getByRole('img', { name: /Health-check success heatmap by application/ })).toBeInTheDocument();
     expect(within(dialog).getByText('--scenario storage-throttle --namespace robot-shop', { exact: false })).toBeInTheDocument();
+    expect(within(dialog).getByText(/Running StorageThrottleScenarioPlugin/)).toBeInTheDocument();
+    expect(within(dialog).getByText(/I\/O throttle removed/)).toBeInTheDocument();
     await user.click(within(dialog).getByRole('button', { name: 'Close' }));
 
     await user.click(screen.getByRole('row', { name: 'Open scenario 17 details' }));

@@ -8,7 +8,7 @@ interface ScenarioExplorerProps {
   runPhase: MockAiRun['phase'];
 }
 
-type ScenarioSortKey = 'generation' | 'scenarioId' | 'scenarioType' | 'fitnessScore' | 'outcome' | 'healthStatus' | 'durationSeconds' | 'origin';
+type ScenarioSortKey = 'generation' | 'scenarioId' | 'scenarioType' | 'fitnessScore' | 'outcome' | 'durationSeconds';
 type SortDirection = 'asc' | 'desc';
 
 const formatFitness = (value: number) => value.toLocaleString(undefined, { maximumFractionDigits: 4 });
@@ -18,13 +18,10 @@ const columns: Array<{ key: ScenarioSortKey; label: string }> = [
   { key: 'scenarioType', label: 'Scenario name' },
   { key: 'fitnessScore', label: 'Fitness score' },
   { key: 'outcome', label: 'Status' },
-  { key: 'healthStatus', label: 'Health checks' },
   { key: 'durationSeconds', label: 'Duration' },
-  { key: 'origin', label: 'Origin' },
 ];
 
 function sortValue(scenario: MockAiScenario, key: ScenarioSortKey): string | number {
-  if (key === 'healthStatus') return scenario.healthChecks.status;
   return scenario[key];
 }
 
@@ -111,7 +108,7 @@ function ScenarioDetail({ scenario, runPhase }: { scenario: MockAiScenario; runP
 
       <section className="krkn-ai-log-panel" aria-label="Scenario pod log">
         <h3>Scenario pod log</h3>
-        <p className="krkn-ai-illustrative-note">Illustrative mock log text — no live pod was queried.</p>
+        <p className="krkn-ai-illustrative-note">Sanitized excerpt from the supplied scenario log — no live pod was queried.</p>
         {scenario.logLines.length > 0
           ? <pre className="krkn-ai-log-panel__lines">{scenario.logLines.join('\n')}</pre>
           : <p className="krkn-ai-not-available">Not available yet</p>}
@@ -232,14 +229,7 @@ export function ScenarioExplorer({ scenarios, runPhase }: ScenarioExplorerProps)
                 <td>{scenario.scenarioType}</td>
                 <td>{formatFitness(scenario.fitnessScore)}</td>
                 <td><Label color={scenario.outcome === 'Failed' ? 'red' : 'green'}>{scenario.outcome}</Label></td>
-                <td>
-                  <Label color={scenario.healthChecks.status === 'Healthy' ? 'green' : scenario.healthChecks.status === 'Failed' ? 'red' : 'orange'}>
-                    {scenario.healthChecks.status}
-                  </Label>
-                  <small>{scenario.healthChecks.failedChecks} / {scenario.healthChecks.totalChecks} failed</small>
-                </td>
                 <td>{scenario.durationSeconds.toLocaleString(undefined, { maximumFractionDigits: 2 })}s</td>
-                <td>{scenario.origin}</td>
               </tr>
             ))}
           </tbody>

@@ -1,4 +1,5 @@
 import { buildMockConfigYaml, createDefaultConfigDraft } from './configModel';
+import { getScenarioLogLines } from './scenarioLogData';
 import type { MockAiFitnessPoint, MockAiHealthCheckSample, MockAiRun, MockAiScenario, MockAiTarget } from './types';
 
 const clusterNames = {
@@ -126,7 +127,7 @@ type RawScenario = [
   returnCode: number | null,
 ];
 
-// CSV parameters are allowlisted; commands, image values, pod names, and raw logs are excluded.
+// CSV parameters are allowlisted; commands, image values, and credentials are excluded.
 const rawScenarios: RawScenario[] = [
   [1, 0, 'storage-throttle', 26.798, 234.18, { namespace: 'robot-shop', 'pvc-name': 'data-redis-0', 'throttle-type': 'iops', 'read-iops': '80', 'write-iops': '353', duration: '60' }, [], 'initial', 0.116, 0.7849, 0, null],
   [2, 0, 'storage-throttle', 16.6341, 139.37, { namespace: 'robot-shop', 'pvc-name': 'data-redis-0', 'throttle-type': 'both', 'read-iops': '418', 'write-iops': '489', duration: '60' }, [], 'initial', 0.1122, 0.4322, 0, null],
@@ -205,9 +206,7 @@ const scenarios: MockAiScenario[] = rawScenarios.map(([scenarioId, generation, s
     durationSeconds,
     outcome: failed ? 'Failed' : 'Succeeded',
     podName,
-    logLines: failed
-      ? ['Illustrative failed mock scenario; raw pod output is intentionally omitted.', 'Mock return code: 1.']
-      : ['Illustrative mock scenario pod completed.', `Mock fitness score: ${fitnessScore}.`],
+    logLines: getScenarioLogLines(scenarioType, failed),
     arguments: [
       '--scenario',
       scenarioType,
