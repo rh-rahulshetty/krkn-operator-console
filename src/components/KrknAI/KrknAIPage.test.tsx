@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { useState } from 'react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
@@ -258,7 +258,7 @@ function StatefulMockPage() {
 }
 
 describe('Krkn AI run inspection', () => {
-  it('shows run config and drills into scalable generation and scenario selectors', async () => {
+  it('sorts and filters scenario rows and opens detailed health telemetry', async () => {
     const user = userEvent.setup();
     render(<KrknAIPage runs={mockAiRuns} onAddRun={vi.fn()} />);
 
@@ -276,15 +276,33 @@ describe('Krkn AI run inspection', () => {
 
     await user.click(screen.getByText('View krkn-ai.yaml used for this run'));
     expect(screen.getByText(/kubeconfig_file_path: \/input\/kubeconfig/)).toBeInTheDocument();
-    expect(screen.getByRole('combobox', { name: 'Generation' })).toHaveValue('1');
-    expect(screen.getByRole('combobox', { name: 'Scenario execution' })).toHaveValue('6');
-    expect(screen.getByRole('heading', { name: 'Scenario 6: storage-throttle' })).toBeInTheDocument();
-    expect(screen.getByText('Fitness function result')).toBeInTheDocument();
-    expect(screen.getByText('--scenario storage-throttle --namespace robot-shop', { exact: false })).toBeInTheDocument();
 
-    await user.selectOptions(screen.getByRole('combobox', { name: 'Generation' }), '4');
-    expect(screen.getByRole('combobox', { name: 'Scenario execution' })).toHaveValue('17');
-    expect(screen.getByRole('heading', { name: 'Scenario 17: container-scenarios' })).toBeInTheDocument();
+    const scenarioTable = screen.getByRole('table', { name: 'Scenario executions' });
+    expect(within(scenarioTable).getAllByRole('row')).toHaveLength(25);
+    await user.click(within(scenarioTable).getByRole('button', { name: 'Fitness score' }));
+    await user.click(within(scenarioTable).getByRole('button', { name: /Fitness score/ }));
+    expect(within(scenarioTable).getAllByRole('row')[1]).toHaveTextContent('30.4453');
+    expect(within(scenarioTable).getAllByRole('row')[1]).toHaveTextContent('storage-throttle');
+
+    const search = screen.getByRole('searchbox', { name: 'Search scenarios' });
+    await user.type(search, 'storage-throttle');
+    expect(screen.getByText('8 of 24 scenarios')).toBeInTheDocument();
+    await user.clear(search);
+    await user.type(search, 'scenario-name-that-does-not-exist');
+    expect(screen.getByText('No scenarios match the current filters.')).toBeInTheDocument();
+    await user.clear(search);
+
+    await user.click(screen.getByRole('row', { name: 'Open scenario 1 details' }));
+    const dialog = screen.getByRole('dialog', { name: 'Scenario 1: storage-throttle' });
+    expect(within(dialog).getByText('500')).toBeInTheDocument();
+    expect(within(dialog).getByText('58')).toBeInTheDocument();
+    expect(within(dialog).getByText('11.6%')).toBeInTheDocument();
+    expect(within(dialog).getByRole('img', { name: /Health-check response time by application/ })).toBeInTheDocument();
+    expect(within(dialog).getByRole('img', { name: /Health-check success heatmap by application/ })).toBeInTheDocument();
+    expect(within(dialog).getByText('--scenario storage-throttle --namespace robot-shop', { exact: false })).toBeInTheDocument();
+    await user.click(within(dialog).getByRole('button', { name: 'Close' }));
+
+    await user.click(screen.getByRole('row', { name: 'Open scenario 17 details' }));
     expect(screen.getByText(/scenario failed; the overall run phase is Succeeded/)).toBeInTheDocument();
     expect(screen.getAllByText('-1 fitness units').length).toBeGreaterThan(0);
   });

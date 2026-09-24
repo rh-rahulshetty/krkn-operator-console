@@ -1,5 +1,5 @@
 import { buildMockConfigYaml, createDefaultConfigDraft } from './configModel';
-import type { MockAiFitnessPoint, MockAiRun, MockAiScenario, MockAiTarget } from './types';
+import type { MockAiFitnessPoint, MockAiHealthCheckSample, MockAiRun, MockAiScenario, MockAiTarget } from './types';
 
 const clusterNames = {
   east: 'staging-us-east-1',
@@ -154,9 +154,49 @@ const rawScenarios: RawScenario[] = [
   [24, 5, 'dns-outage', 10.1455, 303.11, { namespace: 'robot-shop' }, [19, 19], 'type_mutation', 0.0955, 0.1952, 0, null],
 ];
 
+const healthCheckCounts: Record<number, readonly [total: number, failed: number]> = {
+  1: [500, 58], 2: [312, 35], 3: [189, 21], 4: [129, 14],
+  5: [306, 34], 6: [316, 36], 7: [421, 50], 8: [328, 38],
+  9: [237, 26], 10: [355, 41], 11: [263, 31], 12: [319, 37],
+  13: [312, 38], 14: [322, 37], 15: [330, 38], 16: [310, 32],
+  17: [176, 17], 18: [270, 26], 19: [304, 30], 20: [264, 25],
+  21: [331, 34], 22: [284, 29], 23: [286, 28], 24: [670, 64],
+};
+
+type RawHealthSample = readonly [
+  application: string,
+  secondsIntoScenario: number,
+  responseTimeSeconds: number,
+  statusCode: number,
+  success: boolean,
+];
+
+// Sanitized, downsampled points from generation_0/scenario_1.yaml. URLs and errors are omitted.
+const representativeHealthSamples: RawHealthSample[] = [
+  ['rs', 1.2, 1.188, 200, true], ['rs', 73.3, 0.515, 200, true], ['rs', 138.6, 1.277, 200, true], ['rs', 232.8, 1.244, 200, true],
+  ['cart', 1.2, 1.187, 200, true], ['cart', 74, 1.332, 200, true], ['cart', 136.5, 1.24, 200, true], ['cart', 230.8, 0.517, 200, true],
+  ['catalogue', 1.2, 1.189, 200, true], ['catalogue', 72.5, 1.444, 200, true], ['catalogue', 137.7, 1.232, 200, true], ['catalogue', 232.8, 1.238, 200, true],
+  ['payment', 1.2, 1.188, 200, true], ['payment', 70.7, 1.412, 200, true], ['payment', 136.2, 1.196, 200, true], ['payment', 231, 1.227, 200, true],
+  ['ratings', 2, 1.225, 404, false], ['ratings', 74.6, 0.498, 404, false], ['ratings', 137.9, 1.543, 404, false], ['ratings', 234.2, 1.277, 404, false],
+  ['shipping', 1.2, 1.185, 200, true], ['shipping', 71.3, 1.768, 200, true], ['shipping', 134.9, 1.294, 200, true], ['shipping', 230.5, 1.197, 200, true],
+  ['user', 1.2, 1.201, 200, true], ['user', 75.3, 1.221, 200, true], ['user', 139.7, 1.258, 200, true], ['user', 232.6, 1.271, 200, true],
+];
+
+function buildHealthCheckSamples(durationSeconds: number): MockAiHealthCheckSample[] {
+  const durationScale = durationSeconds / 234.2;
+  return representativeHealthSamples.map(([application, seconds, responseTimeSeconds, statusCode, success]) => ({
+    application,
+    secondsIntoScenario: Number((seconds * durationScale).toFixed(1)),
+    responseTimeSeconds,
+    statusCode,
+    success,
+  }));
+}
+
 const scenarios: MockAiScenario[] = rawScenarios.map(([scenarioId, generation, scenarioType, fitnessScore, durationSeconds, parameters, parentScenarioIds, origin, healthCheckFailureScore, healthCheckResponseTimeScore, krknFailureScore, returnCode]) => {
   const podName = `mock-krkn-scenario-${scenarioId}`;
   const failed = returnCode !== null;
+  const [totalChecks, failedChecks] = healthCheckCounts[scenarioId];
   return {
     scenarioId,
     generation,
@@ -180,6 +220,12 @@ const scenarios: MockAiScenario[] = rawScenarios.map(([scenarioId, generation, s
     healthCheckResponseTimeScore,
     krknFailureScore,
     ...(returnCode === null ? {} : { returnCode }),
+    healthChecks: {
+      status: failedChecks === 0 ? 'Healthy' : failedChecks === totalChecks ? 'Failed' : 'Degraded',
+      totalChecks,
+      failedChecks,
+      samples: buildHealthCheckSamples(durationSeconds),
+    },
   };
 });
 

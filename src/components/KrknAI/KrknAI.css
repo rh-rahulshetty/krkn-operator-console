@@ -143,7 +143,7 @@
 
 
 .krkn-ai-scenario-detail {
-  margin-block-start: 1rem;
+  margin: 0;
 }
 
 .krkn-ai-log-panel {
@@ -343,37 +343,129 @@
   overflow-wrap: anywhere;
 }
 
-.krkn-ai-scenario-explorer__intro {
-  margin-block-start: 0;
-  color: var(--krkn-ai-muted);
+.krkn-ai-scenario-explorer {
+  min-width: 0;
+  padding: 1rem;
+  border: 1px solid var(--krkn-ai-border);
+  border-radius: 4px;
+  background: var(--krkn-ai-surface);
 }
 
-.krkn-ai-scenario-explorer__selectors {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+.krkn-ai-scenario-explorer__heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
   gap: 1rem;
   margin-block-end: 1rem;
 }
 
-.krkn-ai-scenario-explorer__selectors label {
+.krkn-ai-scenario-explorer__intro {
+  margin-block: 0.35rem 0;
+  color: var(--krkn-ai-muted);
+}
+
+.krkn-ai-scenario-explorer__filters {
+  display: grid;
+  grid-template-columns: minmax(14rem, 2fr) repeat(2, minmax(11rem, 1fr));
+  gap: 1rem;
+  margin-block-end: 1rem;
+}
+
+.krkn-ai-scenario-explorer__filters label {
   display: grid;
   gap: 0.4rem;
   min-width: 0;
   font-weight: 600;
 }
 
-.krkn-ai-scenario-explorer__selectors select {
+.krkn-ai-scenario-explorer__filters input,
+.krkn-ai-scenario-explorer__filters select {
   width: 100%;
   min-height: 2.5rem;
-  padding: 0.45rem 2rem 0.45rem 0.65rem;
+  padding: 0.45rem 0.65rem;
   border: 1px solid var(--krkn-ai-border);
   border-radius: 4px;
   background: var(--krkn-ai-surface);
   color: inherit;
 }
 
+.krkn-ai-scenario-table-wrap {
+  max-height: 30rem;
+  overflow: auto;
+  border: 1px solid var(--krkn-ai-border);
+  border-radius: 4px;
+}
+
+.krkn-ai-scenario-table {
+  width: 100%;
+  min-width: 64rem;
+  border-collapse: collapse;
+  text-align: left;
+}
+
+.krkn-ai-scenario-table caption {
+  padding: 0.65rem;
+  color: var(--krkn-ai-muted);
+  text-align: left;
+}
+
+.krkn-ai-scenario-table thead {
+  position: sticky;
+  z-index: 1;
+  top: 0;
+  background: var(--krkn-ai-surface);
+  box-shadow: 0 1px 0 var(--krkn-ai-border);
+}
+
+.krkn-ai-scenario-table th,
+.krkn-ai-scenario-table td {
+  padding: 0.65rem;
+  border-block-end: 1px solid var(--krkn-ai-border);
+  vertical-align: middle;
+}
+
+.krkn-ai-scenario-table th button {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.krkn-ai-scenario-table tbody tr {
+  cursor: pointer;
+}
+
+.krkn-ai-scenario-table tbody tr:hover,
+.krkn-ai-scenario-table tbody tr:focus-visible {
+  background: var(--pf-v5-global--BackgroundColor--200, rgba(0, 0, 0, 0.04));
+  outline: 2px solid var(--pf-v5-global--primary-color--100, #0066cc);
+  outline-offset: -2px;
+}
+
+.krkn-ai-scenario-table td small {
+  display: block;
+  margin-block-start: 0.25rem;
+  color: var(--krkn-ai-muted);
+  white-space: nowrap;
+}
+
+.krkn-ai-scenario-table__empty {
+  margin: 0;
+  padding: 1rem;
+  color: var(--krkn-ai-muted);
+}
+
+.krkn-ai-scenario-detail__labels {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
 .krkn-ai-scenario-detail__pod {
-  margin-block: 0.35rem 0;
+  margin-block: 0;
   color: var(--krkn-ai-muted);
   font-weight: 400;
 }
@@ -382,16 +474,112 @@
   margin-block-start: 1rem;
 }
 
-.krkn-ai-scenario-detail__arguments h5 {
-  margin-block: 0 0.5rem;
+.krkn-ai-scenario-detail__arguments h4,
+.krkn-ai-scenario-detail__section h3 {
+  margin-block: 0 0.75rem;
 }
 
 .krkn-ai-scenario-detail__section {
-  margin-block: 1.25rem;
+  margin-block: 1.5rem;
+  padding-block-start: 1rem;
+  border-block-start: 1px solid var(--krkn-ai-border);
 }
 
-.krkn-ai-scenario-detail__section h4 {
-  margin-block: 0 0.75rem;
+.krkn-ai-health-charts {
+  display: grid;
+  gap: 1.25rem;
+  margin-block-start: 1rem;
+}
+
+.krkn-ai-health-chart {
+  min-width: 0;
+  margin: 0;
+  padding: 0.75rem;
+  border: 1px solid var(--krkn-ai-border);
+  border-radius: 4px;
+}
+
+.krkn-ai-health-chart figcaption {
+  margin-block-end: 0.5rem;
+  font-weight: 600;
+}
+
+.krkn-ai-health-chart svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  color: var(--pf-v5-global--Color--100, #151515);
+}
+
+.krkn-ai-health-chart__gridline line,
+.krkn-ai-health-chart__axis {
+  stroke: var(--krkn-ai-border);
+  stroke-width: 1;
+}
+
+.krkn-ai-health-chart__gridline text,
+.krkn-ai-health-chart__tick text,
+.krkn-ai-health-chart__axis-label,
+.krkn-ai-health-chart__label,
+.krkn-ai-health-heatmap__code {
+  fill: currentColor;
+  font-family: inherit;
+  font-size: 12px;
+}
+
+.krkn-ai-health-chart__line {
+  fill: none;
+  stroke-width: 2.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.krkn-ai-health-chart__legend,
+.krkn-ai-health-heatmap__legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem 1rem;
+  margin-block-start: 0.5rem;
+}
+
+.krkn-ai-health-chart__legend span,
+.krkn-ai-health-heatmap__legend span {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.krkn-ai-health-chart__legend i {
+  width: 0.85rem;
+  height: 0.2rem;
+}
+
+.krkn-ai-health-heatmap__success {
+  fill: var(--pf-v5-global--success-color--100, #3e8635);
+  stroke: var(--krkn-ai-surface);
+}
+
+.krkn-ai-health-heatmap__failure {
+  fill: var(--pf-v5-global--danger-color--100, #c9190b);
+  stroke: var(--krkn-ai-surface);
+}
+
+.krkn-ai-health-heatmap__code {
+  fill: #fff;
+  font-weight: 600;
+  pointer-events: none;
+}
+
+.krkn-ai-health-heatmap__legend-success::before,
+.krkn-ai-health-heatmap__legend-failure::before {
+  width: 0.75rem;
+  height: 0.75rem;
+  background: var(--pf-v5-global--success-color--100, #3e8635);
+  content: '';
+}
+
+.krkn-ai-health-heatmap__legend-failure::before {
+  background: var(--pf-v5-global--danger-color--100, #c9190b);
 }
 
 .krkn-ai-fitness-chart__figure {
@@ -477,12 +665,13 @@
     flex-direction: column;
   }
 
-  .krkn-ai-run-detail__title-row {
+  .krkn-ai-run-detail__title-row,
+  .krkn-ai-scenario-explorer__heading {
     align-items: flex-start;
     flex-direction: column;
   }
 
-  .krkn-ai-scenario-explorer__selectors {
+  .krkn-ai-scenario-explorer__filters {
     grid-template-columns: minmax(0, 1fr);
   }
 }

@@ -3,6 +3,7 @@ import type { SelectedCluster } from '../../types/api';
 export type MockAiRunPhase = 'Pending' | 'Provisioning' | 'Running' | 'Succeeded' | 'Failed' | 'Cancelled';
 export type MockAiScenarioOutcome = 'Succeeded' | 'Failed';
 export type MockAiMainPodStatus = 'Pending' | 'Running' | 'Succeeded' | 'Failed' | 'Not created';
+export type MockAiHealthStatus = 'Healthy' | 'Degraded' | 'Failed' | 'Unavailable';
 
 export type MockAiScenarioParameter =
   | 'namespace'
@@ -54,6 +55,21 @@ export interface MockAiTarget {
   warnings: string[];
 }
 
+export interface MockAiHealthCheckSample {
+  application: string;
+  secondsIntoScenario: number;
+  responseTimeSeconds: number;
+  statusCode: number;
+  success: boolean;
+}
+
+export interface MockAiScenarioHealth {
+  status: MockAiHealthStatus;
+  totalChecks: number;
+  failedChecks: number;
+  samples: MockAiHealthCheckSample[];
+}
+
 export interface MockAiScenario {
   scenarioId: number;
   /** Zero-based generation ID from the sample run. */
@@ -73,6 +89,7 @@ export interface MockAiScenario {
   healthCheckResponseTimeScore?: number;
   krknFailureScore?: number;
   returnCode?: number;
+  healthChecks: MockAiScenarioHealth;
 }
 
 export interface MockAiFitnessPoint {
